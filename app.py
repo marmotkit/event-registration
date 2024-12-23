@@ -73,6 +73,35 @@ def event_detail(event_id):
         flash('無效的活動 ID')
         return redirect(url_for('index'))
 
+@app.route('/event/<event_id>/registration/<registration_id>/cancel', methods=['POST'])
+def cancel_registration(event_id, registration_id):
+    try:
+        # 檢查活動是否存在
+        event = events_collection.find_one({'_id': ObjectId(event_id)})
+        if not event:
+            flash('活動不存在')
+            return redirect(url_for('index'))
+        
+        # 檢查報名記錄是否存在
+        registration = registrations_collection.find_one({
+            '_id': ObjectId(registration_id),
+            'event_id': ObjectId(event_id)
+        })
+        
+        if not registration:
+            flash('報名記錄不存在')
+            return redirect(url_for('event_detail', event_id=event_id))
+        
+        # 刪除報名記錄
+        registrations_collection.delete_one({'_id': ObjectId(registration_id)})
+        flash('已取消報名')
+        
+        return redirect(url_for('event_detail', event_id=event_id))
+    except Exception as e:
+        print(f"Error canceling registration: {str(e)}")
+        flash('取消報名時發生錯誤')
+        return redirect(url_for('event_detail', event_id=event_id))
+
 @app.route('/register/<event_id>', methods=['GET', 'POST'])
 def register(event_id):
     try:

@@ -40,6 +40,7 @@
                             {% endfor %}
                         {% endif %}
                         <th>報名時間</th>
+                        <th>操作</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -54,6 +55,16 @@
                             {% endfor %}
                         {% endif %}
                         <td>{{ registration.registration_time.strftime('%Y-%m-%d %H:%M') if registration.registration_time else '' }}</td>
+                        <td>
+                            <form action="{{ url_for('cancel_registration', event_id=event._id, registration_id=registration._id) }}" 
+                                  method="POST" 
+                                  onsubmit="return confirm('確定要取消報名嗎？此操作無法復原。');"
+                                  style="display: inline;">
+                                <button type="submit" class="btn btn-danger btn-sm">
+                                    <i class="fas fa-times"></i> 取消報名
+                                </button>
+                            </form>
+                        </td>
                     </tr>
                     {% endfor %}
                 </tbody>
