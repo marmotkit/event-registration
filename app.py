@@ -82,22 +82,27 @@ def clean_custom_fields(custom_fields):
 # 路由
 @app.route('/')
 def index():
-    # 獲取所有活動並按日期排序
-    events = list(events_collection.find().sort('start_date', -1))
-    
-    # 對每個活動添加報名人數統計
-    for event in events:
-        event['registration_count'] = registrations_collection.count_documents({'event_id': event['_id']})
-        # 計算已繳費金額
-        paid_registrations = registrations_collection.find({
-            'event_id': event['_id'],
-            'has_paid': True
-        })
-        event['paid_amount'] = sum(1 for _ in paid_registrations) * event.get('fee', 0)
-        # 計算總金額
-        event['total_amount'] = event['registration_count'] * event.get('fee', 0)
-    
-    return render_template('index.html', events=events)
+    try:
+        # 獲取所有活動並按日期排序
+        events = list(events_collection.find().sort('start_date', -1))
+        
+        # 對每個活動添加報名人數統計
+        for event in events:
+            # 獲取報名資料
+            registrations = list(registrations_collection.find({'event_id': event['_id']}))
+            event['registration_count'] = len(registrations)
+            
+            # 計算已繳費人數和金額
+            paid_count = sum(1 for reg in registrations if reg.get('has_paid', False))
+            event['paid_count'] = paid_count
+            event['paid_amount'] = paid_count * event.get('fee', 0)
+            event['total_amount'] = event['registration_count'] * event.get('fee', 0)
+        
+        return render_template('index.html', events=events)
+    except Exception as e:
+        print(f"Error in index: {str(e)}")
+        flash('載入活動列表時發生錯誤')
+        return render_template('index.html', events=[])
 
 @app.route('/event/<event_id>')
 def event_detail(event_id):
@@ -116,7 +121,7 @@ def event_detail(event_id):
         paid_count = sum(1 for reg in registrations if reg.get('has_paid', False))
         event['paid_count'] = paid_count
         event['paid_amount'] = paid_count * event.get('fee', 0)
-        event['total_amount'] = len(registrations) * event.get('fee', 0)
+        event['total_amount'] = event['registration_count'] * event.get('fee', 0)
         
         return render_template('event_detail.html', event=event, registrations=registrations)
     except Exception as e:

@@ -2,7 +2,7 @@
 
 {% block content %}
 <div class="container">
-    <div class="card">
+    <div class="card mb-4">
         <div class="card-body">
             <h1 class="card-title">{{ event.title }}</h1>
             <p class="card-text">{{ event.description }}</p>
@@ -40,11 +40,59 @@
                         </div>
                         <div class="col-md-4">
                             <p class="mb-1">已收費用</p>
-                            <h3>NT$ {{ event.paid_amount }}</h3>
+                            <h3>NT$ {{ event.registration_count * event.fee }}</h3>
                         </div>
                     </div>
                 </div>
             </div>
+
+            {% if registrations %}
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h5 class="card-title">報名名單</h5>
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>姓名</th>
+                                    <th>電話</th>
+                                    <th>電子郵件</th>
+                                    {% for field in event.custom_fields %}
+                                    <th>{{ field.name }}</th>
+                                    {% endfor %}
+                                    {% if event.notes_label %}
+                                    <th>{{ event.notes_label }}</th>
+                                    {% endif %}
+                                    <th>報名時間</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for registration in registrations %}
+                                <tr>
+                                    <td>{{ registration.name }}</td>
+                                    <td>{{ registration.phone }}</td>
+                                    <td>{{ registration.email }}</td>
+                                    {% for field in event.custom_fields %}
+                                    <td>
+                                        {% if field.type == 'checkbox' %}
+                                            {{ ', '.join(registration.custom_fields.get(field.name, [])) }}
+                                        {% else %}
+                                            {{ registration.custom_fields.get(field.name, '') }}
+                                        {% endif %}
+                                    </td>
+                                    {% endfor %}
+                                    {% if event.notes_label %}
+                                    <td>{{ registration.notes }}</td>
+                                    {% endif %}
+                                    <td>{{ registration.timestamp.strftime('%Y-%m-%d %H:%M') }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
 
             <div class="text-center">
                 <a href="{{ url_for('register', event_id=event._id) }}" class="btn btn-primary btn-lg">
