@@ -44,9 +44,20 @@
                 <div class="event-info">
                     <div class="field-content">
                         <i class="fas fa-calendar-alt"></i>
-                        <span class="field-label">活動時間：</span>
-                        {{ event.date }}
+                        <span class="field-label">活動日期：</span>
+                        {% if event.start_date == event.end_date %}
+                            {{ event.start_date }}
+                        {% else %}
+                            {{ event.start_date }} 至 {{ event.end_date }}
+                        {% endif %}
                     </div>
+                    {% if event.meeting_time %}
+                    <div class="field-content">
+                        <i class="fas fa-clock"></i>
+                        <span class="field-label">集合時間：</span>
+                        {{ event.meeting_time }}
+                    </div>
+                    {% endif %}
                     <div class="field-content">
                         <i class="fas fa-map-marker-alt"></i>
                         <span class="field-label">活動地點：</span>
