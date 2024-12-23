@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="card">
+    <div class="card-body">
+        <h1 class="card-title mb-4">{{ 'Edit' if event else 'New' }} 活動</h1>
+        
+        <form method="POST" class="needs-validation" novalidate>
+            <div class="mb-3">
+                <label for="title" class="form-label">活動名稱 *</label>
+                <input type="text" class="form-control" id="title" name="title" 
+                       value="{{ event.title if event else '' }}" required>
+                <div class="invalid-feedback">請輸入活動名稱</div>
+            </div>
+
+            <div class="mb-3">
+                <label for="description" class="form-label">活動說明</label>
+                <textarea class="form-control" id="description" name="description" rows="3">{{ event.description if event else '' }}</textarea>
+            </div>
+
+            <div class="mb-3">
+                <label for="date" class="form-label">活動時間 *</label>
+                <input type="datetime-local" class="form-control" id="date" name="date"
+                       value="{{ event.date.strftime('%Y-%m-%dT%H:%M') if event else '' }}" required>
+                <div class="invalid-feedback">請選擇活動時間</div>
+            </div>
+
+            <div class="mb-3">
+                <label for="location" class="form-label">活動地點 *</label>
+                <input type="text" class="form-control" id="location" name="location"
+                       value="{{ event.location if event else '' }}" required>
+                <div class="invalid-feedback">請輸入活動地點</div>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">自訂欄位</label>
+                <div id="custom-fields">
+                    {% if event and event.custom_fields %}
+                        {% for field in event.custom_fields %}
+                        <div class="input-group mb-2">
+                            <input type="text" class="form-control" name="custom_fields" value="{{ field }}">
+                            <button type="button" class="btn btn-outline-danger remove-field">
+                                <i class="fas fa-minus"></i>
+                            </button>
+                        </div>
+                        {% endfor %}
+                    {% endif %}
+                </div>
+                <button type="button" class="btn btn-outline-secondary" id="add-field">
+                    <i class="fas fa-plus"></i> 新增欄位
+                </button>
+            </div>
+
+            <div class="d-grid gap-2">
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-save"></i> 儲存活動
+                </button>
+                <a href="{{ url_for('admin') }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left"></i> 返回管理頁面
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// 表單驗證
+(function () {
+    'use strict'
+    var forms = document.querySelectorAll('.needs-validation')
+    Array.prototype.slice.call(forms).forEach(function (form) {
+        form.addEventListener('submit', function (event) {
+            if (!form.checkValidity()) {
+                event.preventDefault()
+                event.stopPropagation()
+            }
+            form.classList.add('was-validated')
+        }, false)
+    })
+})()
+
+// 自訂欄位管理
+document.getElementById('add-field').addEventListener('click', function() {
+    const container = document.getElementById('custom-fields');
+    const fieldDiv = document.createElement('div');
+    fieldDiv.className = 'input-group mb-2';
+    fieldDiv.innerHTML = `
+        <input type="text" class="form-control" name="custom_fields" placeholder="輸入欄位名稱">
+        <button type="button" class="btn btn-outline-danger remove-field">
+            <i class="fas fa-minus"></i>
+        </button>
+    `;
+    container.appendChild(fieldDiv);
+});
+
+document.getElementById('custom-fields').addEventListener('click', function(e) {
+    if (e.target.classList.contains('remove-field') || e.target.closest('.remove-field')) {
+        e.target.closest('.input-group').remove();
+    }
+});
+</script>
+{% endblock %}

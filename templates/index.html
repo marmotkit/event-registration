@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1 class="mb-4">活動列表</h1>
+
+<div class="row row-cols-1 row-cols-md-2 g-4">
+    {% for event in events %}
+    <div class="col">
+        <div class="card h-100 event-card">
+            <div class="card-body">
+                <h5 class="card-title">{{ event.title }}</h5>
+                <p class="card-text">{{ event.description[:100] }}{% if event.description|length > 100 %}...{% endif %}</p>
+                <p class="card-text">
+                    <small class="text-muted">
+                        <i class="fas fa-calendar-alt"></i> {{ event.date }}<br>
+                        <i class="fas fa-map-marker-alt"></i> {{ event.location }}
+                    </small>
+                </p>
+                <div class="d-flex justify-content-between align-items-center">
+                    <a href="{{ url_for('event_detail', event_id=event.id) }}" class="btn btn-primary">查看詳情</a>
+                    <button class="btn btn-outline-primary share-line" 
+                            data-url="{{ url_for('register', event_id=event.id, _external=True) }}">
+                        分享到 Line
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="col-12">
+        <div class="alert alert-info">目前沒有活動</div>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.querySelectorAll('.share-line').forEach(button => {
+    button.addEventListener('click', function() {
+        const url = this.dataset.url;
+        const lineUrl = `https://social-plugins.line.me/lineit/share?url=${encodeURIComponent(url)}`;
+        window.open(lineUrl, '_blank', 'width=600,height=500');
+    });
+});
+</script>
+{% endblock %}

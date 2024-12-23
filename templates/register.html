@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="card">
+    <div class="card-body">
+        <h1 class="card-title mb-4">報名 - {{ event.title }}</h1>
+        
+        <div class="mb-4">
+            <h5>活動資訊：</h5>
+            <p><i class="fas fa-calendar-alt"></i> 時間：{{ event.date.strftime('%Y-%m-%d %H:%M') }}</p>
+            <p><i class="fas fa-map-marker-alt"></i> 地點：{{ event.location }}</p>
+            <p>{{ event.description }}</p>
+        </div>
+
+        <form method="POST" class="needs-validation" novalidate>
+            <div class="mb-3">
+                <label for="name" class="form-label">姓名 *</label>
+                <input type="text" class="form-control" id="name" name="name" required>
+                <div class="invalid-feedback">
+                    請輸入姓名
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label for="email" class="form-label">電子郵件 *</label>
+                <input type="email" class="form-control" id="email" name="email" required>
+                <div class="invalid-feedback">
+                    請輸入有效的電子郵件地址
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label for="phone" class="form-label">電話 *</label>
+                <input type="tel" class="form-control" id="phone" name="phone" required>
+                <div class="invalid-feedback">
+                    請輸入電話號碼
+                </div>
+            </div>
+
+            {% if event.custom_fields %}
+                {% for field in event.custom_fields %}
+                <div class="mb-3">
+                    <label for="{{ field }}" class="form-label">{{ field }}</label>
+                    <input type="text" class="form-control" id="{{ field }}" name="{{ field }}">
+                </div>
+                {% endfor %}
+            {% endif %}
+
+            <div class="d-grid gap-2">
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-paper-plane"></i> 送出報名
+                </button>
+                <a href="{{ url_for('event_detail', event_id=event.id) }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left"></i> 返回活動頁面
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// 表單驗證
+(function () {
+    'use strict'
+    var forms = document.querySelectorAll('.needs-validation')
+    Array.prototype.slice.call(forms).forEach(function (form) {
+        form.addEventListener('submit', function (event) {
+            if (!form.checkValidity()) {
+                event.preventDefault()
+                event.stopPropagation()
+            }
+            form.classList.add('was-validated')
+        }, false)
+    })
+})()
+</script>
+{% endblock %}
