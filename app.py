@@ -8,6 +8,7 @@ import os
 from dotenv import load_dotenv
 from werkzeug.utils import secure_filename
 import gridfs
+import io
 
 # 載入環境變數
 load_dotenv()
@@ -448,19 +449,51 @@ def delete_event(event_id):
     
     return redirect(url_for('admin'))
 
-@app.route('/download/<file_id>')
-def download_file(file_id):
+@app.route('/event/<event_id>/file/<file_id>')
+def download_file(event_id, file_id):
     try:
-        file_data = fs.get(ObjectId(file_id))
-        return send_file(
-            file_data,
-            download_name=file_data.filename,
-            as_attachment=True
+        # 確保 ObjectId 格式正確
+        event_id = ObjectId(event_id)
+        file_id = ObjectId(file_id)
+        
+        # 獲取活動資訊
+        event = events_collection.find_one({'_id': event_id})
+        if not event:
+            flash('找不到活動')
+            return redirect(url_for('index'))
+            
+        # 在活動的檔案列表中尋找指定檔案
+        file_info = None
+        for file in event.get('reference_files', []):
+            if file.get('_id') == file_id:
+                file_info = file
+                break
+                
+        if not file_info:
+            flash('找不到檔案')
+            return redirect(url_for('view_event', event_id=event_id))
+            
+        # 從 GridFS 獲取檔案
+        grid_file = fs.get(file_id)
+        
+        if not grid_file:
+            flash('找不到檔案')
+            return redirect(url_for('view_event', event_id=event_id))
+            
+        # 設置回應標頭
+        response = send_file(
+            io.BytesIO(grid_file.read()),
+            mimetype=grid_file.content_type,
+            as_attachment=True,
+            download_name=file_info['filename']
         )
+        
+        return response
+        
     except Exception as e:
         print(f"Error downloading file: {str(e)}")
         flash('下載檔案時發生錯誤')
-        return redirect(url_for('index'))
+        return redirect(url_for('view_event', event_id=event_id))
 
 @app.route('/admin/event/<event_id>/file/<file_id>/delete', methods=['POST'])
 @login_required

@@ -46,6 +46,46 @@
                 </div>
             </div>
 
+            {% if event.files %}
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">活動相關檔案</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>檔案名稱</th>
+                                    <th>檔案大小</th>
+                                    <th>上傳時間</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for file in event.files %}
+                                <tr>
+                                    <td>
+                                        <i class="fas fa-file me-2"></i>
+                                        {{ file.filename }}
+                                    </td>
+                                    <td>{{ file.size|filesizeformat }}</td>
+                                    <td>{{ file.upload_time.strftime('%Y-%m-%d %H:%M') }}</td>
+                                    <td>
+                                        <a href="{{ url_for('download_file', event_id=event._id, file_id=file._id) }}" 
+                                           class="btn btn-primary btn-sm">
+                                            <i class="fas fa-download"></i> 下載
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
             {% if registrations %}
             <div class="card mb-4">
                 <div class="card-body">
