@@ -9,6 +9,10 @@
             <div class="col-md-6">
                 <p><i class="fas fa-calendar-alt"></i> 活動時間：{{ event.date }}</p>
                 <p><i class="fas fa-map-marker-alt"></i> 活動地點：{{ event.location }}</p>
+                <p><i class="fas fa-user"></i> 活動主辦人：{{ event.organizer }}</p>
+                {% if event.co_organizers %}
+                <p><i class="fas fa-users"></i> 協辦人員：{{ ', '.join(event.co_organizers) }}</p>
+                {% endif %}
             </div>
             <div class="col-md-6 text-md-end">
                 <a href="{{ url_for('register', event_id=event._id) }}" class="btn btn-primary">

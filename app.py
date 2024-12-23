@@ -197,6 +197,8 @@ def new_event():
             'description': request.form.get('description'),
             'date': request.form.get('date'),
             'location': request.form.get('location'),
+            'organizer': request.form.get('organizer'),
+            'co_organizers': [org.strip() for org in request.form.get('co_organizers', '').strip().split('\n') if org.strip()],
             'custom_fields': [field.strip() for field in request.form.get('custom_fields', '').strip().split('\n') if field.strip()],
             'created_at': datetime.now(pytz.timezone('Asia/Taipei')).isoformat()
         }
@@ -210,6 +212,8 @@ def new_event():
         'description': '',
         'date': '',
         'location': '',
+        'organizer': '',
+        'co_organizers': [],
         'custom_fields': []
     }
     return render_template('event_form.html', event=event, is_new=True)
@@ -233,6 +237,9 @@ def edit_event(event_id):
             description = request.form.get('description')
             date = request.form.get('date')
             location = request.form.get('location')
+            organizer = request.form.get('organizer')
+            co_organizers = request.form.get('co_organizers', '').strip().split('\n')
+            co_organizers = [org.strip() for org in co_organizers if org.strip()]
             custom_fields = request.form.get('custom_fields', '').strip().split('\n')
             custom_fields = [field.strip() for field in custom_fields if field.strip()]
 
@@ -244,6 +251,8 @@ def edit_event(event_id):
                     'description': description,
                     'date': date,
                     'location': location,
+                    'organizer': organizer,
+                    'co_organizers': co_organizers,
                     'custom_fields': custom_fields
                 }}
             )

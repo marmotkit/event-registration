@@ -22,6 +22,16 @@
                 <input type="text" class="form-control" id="location" name="location" value="{{ event.location }}" required>
             </div>
             <div class="mb-3">
+                <label for="organizer" class="form-label">活動主辦人</label>
+                <input type="text" class="form-control" id="organizer" name="organizer" value="{{ event.organizer }}" required>
+                <small class="text-muted">請輸入主辦人姓名</small>
+            </div>
+            <div class="mb-3">
+                <label for="co_organizers" class="form-label">協辦人員</label>
+                <textarea class="form-control" id="co_organizers" name="co_organizers" rows="2">{{ '\n'.join(event.co_organizers) if event.co_organizers else '' }}</textarea>
+                <small class="text-muted">每行輸入一位協辦人員姓名</small>
+            </div>
+            <div class="mb-3">
                 <label for="custom_fields" class="form-label">自訂欄位（每行一個）</label>
                 <textarea class="form-control" id="custom_fields" name="custom_fields" rows="3">{{ '\n'.join(event.custom_fields) if event.custom_fields else '' }}</textarea>
                 <small class="text-muted">每行輸入一個欄位名稱，這些欄位會出現在報名表單中</small>
