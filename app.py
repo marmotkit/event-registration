@@ -212,16 +212,25 @@ def new_event():
         field_types = request.form.getlist('field_types[]')
         field_options = request.form.getlist('field_options[]')
         
+        # 預設欄位名稱，這些欄位不能被重複添加
+        reserved_fields = ['姓名', '電話', '電子郵件', 'email', 'phone', 'name']
+        
         custom_fields = []
         for i in range(len(field_names)):
             if field_names[i]:  # 只處理有名稱的欄位
-                field = {
-                    'name': field_names[i],
-                    'type': field_types[i],
-                }
-                if field_types[i] in ['radio', 'checkbox'] and field_options[i]:
-                    field['options'] = [opt.strip() for opt in field_options[i].split(',')]
-                custom_fields.append(field)
+                field_name = field_names[i].strip()
+                # 檢查是否是預設欄位
+                if field_name.lower() not in [f.lower() for f in reserved_fields]:
+                    field = {
+                        'name': field_name,
+                        'type': field_types[i],
+                    }
+                    if field_types[i] in ['radio', 'checkbox'] and field_options[i]:
+                        field['options'] = [opt.strip() for opt in field_options[i].split(',')]
+                    custom_fields.append(field)
+
+        # 處理協辦人員
+        co_organizers = [line.strip() for line in request.form['co_organizers'].split('\n') if line.strip()]
 
         event_data = {
             'title': request.form['title'],
@@ -232,7 +241,7 @@ def new_event():
             'location': request.form['location'],
             'fee': int(request.form['fee']),
             'organizer': request.form['organizer'],
-            'co_organizers': [line.strip() for line in request.form['co_organizers'].split('\n') if line.strip()],
+            'co_organizers': co_organizers,
             'custom_fields': custom_fields,
             'notes_label': request.form.get('notes_label', ''),
             'reference_files': []
@@ -279,17 +288,26 @@ def edit_event(event_id):
             field_types = request.form.getlist('field_types[]')
             field_options = request.form.getlist('field_options[]')
             
+            # 預設欄位名稱，這些欄位不能被重複添加
+            reserved_fields = ['姓名', '電話', '電子郵件', 'email', 'phone', 'name']
+            
             custom_fields = []
             for i in range(len(field_names)):
                 if field_names[i]:  # 只處理有名稱的欄位
-                    field = {
-                        'name': field_names[i],
-                        'type': field_types[i],
-                    }
-                    if field_types[i] in ['radio', 'checkbox'] and field_options[i]:
-                        field['options'] = [opt.strip() for opt in field_options[i].split(',')]
-                    custom_fields.append(field)
+                    field_name = field_names[i].strip()
+                    # 檢查是否是預設欄位
+                    if field_name.lower() not in [f.lower() for f in reserved_fields]:
+                        field = {
+                            'name': field_name,
+                            'type': field_types[i],
+                        }
+                        if field_types[i] in ['radio', 'checkbox'] and field_options[i]:
+                            field['options'] = [opt.strip() for opt in field_options[i].split(',')]
+                        custom_fields.append(field)
 
+            # 處理協辦人員
+            co_organizers = [line.strip() for line in request.form['co_organizers'].split('\n') if line.strip()]
+            
             event_data = {
                 'title': request.form['title'],
                 'description': request.form['description'],
@@ -299,7 +317,7 @@ def edit_event(event_id):
                 'location': request.form['location'],
                 'fee': int(request.form['fee']),
                 'organizer': request.form['organizer'],
-                'co_organizers': [line.strip() for line in request.form['co_organizers'].split('\n') if line.strip()],
+                'co_organizers': co_organizers,
                 'custom_fields': custom_fields,
                 'notes_label': request.form.get('notes_label', ''),
                 'reference_files': event.get('reference_files', [])
