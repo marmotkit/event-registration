@@ -19,13 +19,26 @@
             gap: 12px;
             font-size: 1.4rem;
             font-weight: bold;
+            padding: 8px 0;
         }
         .brand-icon {
-            font-size: 1.6rem;
-            color: rgba(255, 255, 255, 0.9);
+            font-size: 2rem;
+            color: rgba(255, 255, 255, 0.95);
+            margin-right: 4px;
         }
         .brand-text {
             letter-spacing: 1px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .nav-link {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .nav-link i {
+            font-size: 1.1rem;
         }
     </style>
 </head>
@@ -33,7 +46,7 @@
     <nav class="navbar navbar-expand-lg navbar-dark bg-primary mb-4">
         <div class="container">
             <a class="navbar-brand" href="{{ url_for('index') }}">
-                <i class="fas fa-graduation-cap brand-icon"></i>
+                <i class="fas fa-university brand-icon"></i>
                 <span class="brand-text">NTHU EMBA 活動報名系統</span>
             </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
@@ -43,13 +56,15 @@
                 <ul class="navbar-nav me-auto">
                     <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('index') }}">
-                            <i class="fas fa-home"></i> 首頁
+                            <i class="fas fa-home"></i>
+                            <span>首頁</span>
                         </a>
                     </li>
                     {% if current_user.is_authenticated and current_user.is_admin %}
                     <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('admin') }}">
-                            <i class="fas fa-cog"></i> 管理後台
+                            <i class="fas fa-cog"></i>
+                            <span>管理後台</span>
                         </a>
                     </li>
                     {% endif %}
@@ -58,13 +73,15 @@
                     {% if current_user.is_authenticated %}
                     <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('logout') }}">
-                            <i class="fas fa-sign-out-alt"></i> 登出
+                            <i class="fas fa-sign-out-alt"></i>
+                            <span>登出</span>
                         </a>
                     </li>
                     {% else %}
                     <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('login') }}">
-                            <i class="fas fa-sign-in-alt"></i> 登入
+                            <i class="fas fa-sign-in-alt"></i>
+                            <span>登入</span>
                         </a>
                     </li>
                     {% endif %}
