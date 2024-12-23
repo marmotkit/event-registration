@@ -188,23 +188,31 @@ def admin():
 @login_required
 def new_event():
     if not current_user.is_admin:
-        flash('無權限訪問此頁面')
+        flash('您沒有權限訪問此頁面')
         return redirect(url_for('index'))
 
     if request.method == 'POST':
         event_data = {
-            'title': request.form['title'],
-            'description': request.form['description'],
-            'date': request.form['date'],
-            'location': request.form['location'],
-            'custom_fields': request.form.getlist('custom_fields'),
+            'title': request.form.get('title'),
+            'description': request.form.get('description'),
+            'date': request.form.get('date'),
+            'location': request.form.get('location'),
+            'custom_fields': [field.strip() for field in request.form.get('custom_fields', '').strip().split('\n') if field.strip()],
             'created_at': datetime.now(pytz.timezone('Asia/Taipei')).isoformat()
         }
         result = events_collection.insert_one(event_data)
         flash('活動建立成功！')
         return redirect(url_for('admin'))
     
-    return render_template('admin/event_form.html')
+    # 創建一個空的事件對象
+    event = {
+        'title': '',
+        'description': '',
+        'date': '',
+        'location': '',
+        'custom_fields': []
+    }
+    return render_template('event_form.html', event=event, is_new=True)
 
 @app.route('/admin/event/<event_id>/edit', methods=['GET', 'POST'])
 @login_required
@@ -242,7 +250,7 @@ def edit_event(event_id):
             flash('活動已更新')
             return redirect(url_for('admin'))
 
-        return render_template('edit_event.html', event=event)
+        return render_template('event_form.html', event=event, is_new=False)
     except Exception as e:
         print(f"Error editing event: {str(e)}")
         flash('編輯活動時發生錯誤')
