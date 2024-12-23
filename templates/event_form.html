@@ -74,49 +74,54 @@
                 {% endif %}
             </div>
             
-            <!-- 自訂欄位區域 -->
-            <div class="mb-3">
-                <label class="form-label">報名表單欄位</label>
-                <div id="custom_fields_container">
-                    {% if event.custom_fields %}
-                        {% for field in event.custom_fields %}
-                        <div class="custom-field-item mb-2">
-                            <div class="row">
-                                <div class="col-md-4">
-                                    <input type="text" class="form-control" name="field_names[]" 
-                                           value="{{ field.name }}" placeholder="欄位名稱" required>
-                                </div>
-                                <div class="col-md-3">
-                                    <select class="form-select" name="field_types[]">
-                                        <option value="text" {% if field.type == 'text' %}selected{% endif %}>文字</option>
-                                        <option value="radio" {% if field.type == 'radio' %}selected{% endif %}>單選</option>
-                                        <option value="checkbox" {% if field.type == 'checkbox' %}selected{% endif %}>複選</option>
-                                    </select>
-                                </div>
-                                <div class="col-md-4">
-                                    <input type="text" class="form-control" name="field_options[]" 
-                                           value="{{ field.options|join(',') if field.options else '' }}" 
-                                           placeholder="選項（用逗號分隔）">
-                                </div>
-                                <div class="col-md-1">
-                                    <button type="button" class="btn btn-danger btn-sm remove-field">
-                                        <i class="fas fa-times"></i>
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                        {% endfor %}
-                    {% endif %}
-                </div>
-                <button type="button" class="btn btn-outline-primary mt-2" id="add_field">
-                    <i class="fas fa-plus"></i> 新增欄位
-                </button>
-            </div>
-
             <div class="mb-3">
                 <label for="notes_label" class="form-label">備註欄位標籤</label>
                 <input type="text" class="form-control" id="notes_label" name="notes_label" 
-                       value="{{ event.notes_label }}" placeholder="例如：其他備註">
+                       value="{{ event.notes_label if event else '' }}" placeholder="例如：備註">
+                <div class="form-text">此欄位為非必填</div>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">自訂欄位</label>
+                <div id="custom_fields_container">
+                    {% if event and event.custom_fields %}
+                        {% for field in event.custom_fields %}
+                            <div class="custom-field-item mb-2">
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        <input type="text" class="form-control" name="field_names[]" 
+                                               value="{{ field.name }}" placeholder="欄位名稱" required>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <select class="form-select" name="field_types[]">
+                                            <option value="text" {% if field.type == 'text' %}selected{% endif %}>文字</option>
+                                            <option value="radio" {% if field.type == 'radio' %}selected{% endif %}>單選</option>
+                                            <option value="checkbox" {% if field.type == 'checkbox' %}selected{% endif %}>複選</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <input type="text" class="form-control" name="field_options[]" 
+                                               value="{{ ','.join(field.options) if field.options else '' }}" 
+                                               placeholder="選項（用逗號分隔）">
+                                    </div>
+                                    <div class="col-md-1">
+                                        <button type="button" class="btn btn-danger btn-sm remove-field">
+                                            <i class="fas fa-times"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                </div>
+                <button type="button" id="add_field" class="btn btn-secondary mt-2">
+                    <i class="fas fa-plus"></i> 新增欄位
+                </button>
+                <div class="form-text">
+                    如果是單選或複選，請在選項欄位中輸入選項，用逗號分隔。<br>
+                    例如：選項1,選項2,選項3<br>
+                    對於交通方式，建議使用：自行開車,共乘,大眾運輸,其他
+                </div>
             </div>
 
             <div class="d-grid gap-2 d-md-flex justify-content-md-end">

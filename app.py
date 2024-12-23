@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, flash, send_file
+from flask import Flask, render_template, request, redirect, url_for, flash, send_file, jsonify
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from datetime import datetime
 import pytz
@@ -145,38 +145,48 @@ def register(event_id):
         if request.method == 'POST':
             # 驗證必填欄位
             required_fields = ['name', 'email', 'phone']
+            for field in event.get('custom_fields', []):
+                if field.get('required', True) and field['name'] != event.get('notes_label', '備註'):
+                    required_fields.append(field['name'])
+            
             for field in required_fields:
                 if not request.form.get(field):
-                    flash(f'請填寫{field}欄位')
+                    flash(f'{field} 是必填欄位')
                     return render_template('register.html', event=event)
 
+            # 處理報名資料
             registration_data = {
                 'event_id': ObjectId(event_id),
                 'name': request.form['name'],
-                'email': request.form['email'],
                 'phone': request.form['phone'],
-                'registration_time': datetime.now(pytz.timezone('Asia/Taipei'))
+                'email': request.form['email'],
+                'timestamp': datetime.now(),
+                'has_paid': False,  # 新增繳費狀態欄位
+                'custom_fields': {}
             }
-            
-            # 處理自定義欄位
-            custom_fields = {}
-            if event.get('custom_fields'):
-                for field in event['custom_fields']:
-                    custom_fields[field['name']] = request.form.get(field['name'], '')
-            registration_data['custom_fields'] = custom_fields
-            
+
+            # 處理自定義欄位的值
+            for field in event.get('custom_fields', []):
+                field_name = field['name']
+                if field['type'] == 'checkbox':
+                    registration_data['custom_fields'][field_name] = request.form.getlist(f"{field_name}[]")
+                else:
+                    registration_data['custom_fields'][field_name] = request.form.get(field_name)
+
+            if event.get('notes_label'):
+                registration_data['notes'] = request.form.get('notes')
+
             try:
                 registrations_collection.insert_one(registration_data)
                 flash('報名成功！')
-                return redirect(url_for('event_detail', event_id=event_id))
+                return redirect(url_for('index'))
             except Exception as e:
                 print(f"Error saving registration: {str(e)}")
                 flash('報名時發生錯誤，請稍後再試')
-                return render_template('register.html', event=event)
-        
+
         return render_template('register.html', event=event)
     except Exception as e:
-        print(f"Error in registration process: {str(e)}")
+        print(f"Error in register: {str(e)}")
         flash('無效的活動 ID')
         return redirect(url_for('index'))
 
@@ -430,6 +440,56 @@ def delete_file(event_id, file_id):
         flash('刪除檔案時發生錯誤')
     
     return redirect(url_for('edit_event', event_id=event_id))
+
+@app.route('/admin/event/<event_id>')
+@login_required
+def view_event(event_id):
+    if not current_user.is_admin:
+        flash('您沒有權限訪問此頁面')
+        return redirect(url_for('index'))
+    
+    try:
+        event = events_collection.find_one({'_id': ObjectId(event_id)})
+        if not event:
+            flash('活動不存在')
+            return redirect(url_for('admin'))
+
+        # 清理自定義欄位
+        event['custom_fields'] = clean_custom_fields(event.get('custom_fields', []))
+        
+        # 獲取報名資料
+        registrations = list(registrations_collection.find({'event_id': ObjectId(event_id)}))
+        return render_template('view_event.html', event=event, registrations=registrations)
+    except Exception as e:
+        print(f"Error in view_event: {str(e)}")
+        flash('無效的活動 ID')
+        return redirect(url_for('admin'))
+
+@app.route('/admin/registration/<registration_id>/toggle_payment', methods=['POST'])
+@login_required
+def toggle_payment(registration_id):
+    if not current_user.is_admin:
+        return jsonify({'error': '您沒有權限執行此操作'}), 403
+    
+    try:
+        registration = registrations_collection.find_one({'_id': ObjectId(registration_id)})
+        if not registration:
+            return jsonify({'error': '找不到報名記錄'}), 404
+
+        # 切換繳費狀態
+        new_status = not registration.get('has_paid', False)
+        registrations_collection.update_one(
+            {'_id': ObjectId(registration_id)},
+            {'$set': {'has_paid': new_status}}
+        )
+        
+        return jsonify({
+            'success': True,
+            'has_paid': new_status
+        })
+    except Exception as e:
+        print(f"Error toggling payment status: {str(e)}")
+        return jsonify({'error': '更新繳費狀態時發生錯誤'}), 500
 
 # 創建管理員帳號
 def create_admin():
