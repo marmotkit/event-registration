@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, flash
+from flask import Flask, render_template, request, redirect, url_for, flash, send_file
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from datetime import datetime
 import pytz
@@ -6,12 +6,15 @@ from pymongo import MongoClient
 from bson.objectid import ObjectId
 import os
 from dotenv import load_dotenv
+from werkzeug.utils import secure_filename
+import gridfs
 
 # 載入環境變數
 load_dotenv()
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'your-secret-key')
+app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 限制上傳檔案大小為 16MB
 
 # 設定 MongoDB
 client = MongoClient(os.getenv('MONGODB_URI'))
@@ -19,6 +22,13 @@ db = client.event_registration
 events_collection = db.events
 users_collection = db.users
 registrations_collection = db.registrations
+fs = gridfs.GridFS(db)  # 用於存儲檔案
+
+# 允許的檔案類型
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx'}
+
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 # 防止快取
 @app.after_request
@@ -204,47 +214,51 @@ def new_event():
         
         custom_fields = []
         for i in range(len(field_names)):
-            if field_names[i].strip():
+            if field_names[i]:  # 只處理有名稱的欄位
                 field = {
-                    'name': field_names[i].strip(),
+                    'name': field_names[i],
                     'type': field_types[i],
-                    'options': [opt.strip() for opt in field_options[i].split(',') if opt.strip()] if field_options[i] else []
                 }
+                if field_types[i] in ['radio', 'checkbox'] and field_options[i]:
+                    field['options'] = [opt.strip() for opt in field_options[i].split(',')]
                 custom_fields.append(field)
 
         event_data = {
-            'title': request.form.get('title'),
-            'description': request.form.get('description'),
-            'start_date': request.form.get('start_date'),
-            'end_date': request.form.get('end_date'),
-            'meeting_time': request.form.get('meeting_time'),
-            'location': request.form.get('location'),
-            'fee': int(request.form.get('fee', 0)),
-            'organizer': request.form.get('organizer'),
-            'co_organizers': [org.strip() for org in request.form.get('co_organizers', '').strip().split('\n') if org.strip()],
+            'title': request.form['title'],
+            'description': request.form['description'],
+            'start_date': request.form['start_date'],
+            'end_date': request.form['end_date'],
+            'meeting_time': request.form['meeting_time'],
+            'location': request.form['location'],
+            'fee': int(request.form['fee']),
+            'organizer': request.form['organizer'],
+            'co_organizers': [line.strip() for line in request.form['co_organizers'].split('\n') if line.strip()],
             'custom_fields': custom_fields,
-            'notes_label': request.form.get('notes_label', '其他備註'),
-            'created_at': datetime.now(pytz.timezone('Asia/Taipei')).isoformat()
+            'notes_label': request.form.get('notes_label', ''),
+            'reference_files': []
         }
-        result = events_collection.insert_one(event_data)
-        flash('活動建立成功！')
-        return redirect(url_for('admin'))
-    
-    # 創建一個空的事件對象
-    event = {
-        'title': '',
-        'description': '',
-        'start_date': '',
-        'end_date': '',
-        'meeting_time': '',
-        'location': '',
-        'fee': 0,
-        'organizer': '',
-        'co_organizers': [],
-        'custom_fields': [],
-        'notes_label': '其他備註'
-    }
-    return render_template('event_form.html', event=event, is_new=True)
+
+        # 處理檔案上傳
+        if 'reference_files' in request.files:
+            files = request.files.getlist('reference_files')
+            for file in files:
+                if file and file.filename and allowed_file(file.filename):
+                    filename = secure_filename(file.filename)
+                    file_id = fs.put(file, filename=filename)
+                    event_data['reference_files'].append({
+                        '_id': file_id,
+                        'filename': filename
+                    })
+
+        try:
+            events_collection.insert_one(event_data)
+            flash('活動建立成功！')
+            return redirect(url_for('admin'))
+        except Exception as e:
+            print(f"Error creating event: {str(e)}")
+            flash('建立活動時發生錯誤，請稍後再試')
+
+    return render_template('event_form.html', event={}, is_new=True)
 
 @app.route('/admin/event/<event_id>/edit', methods=['GET', 'POST'])
 @login_required
@@ -258,7 +272,7 @@ def edit_event(event_id):
         if not event:
             flash('活動不存在')
             return redirect(url_for('admin'))
-
+        
         if request.method == 'POST':
             # 處理自訂欄位
             field_names = request.form.getlist('field_names[]')
@@ -267,51 +281,57 @@ def edit_event(event_id):
             
             custom_fields = []
             for i in range(len(field_names)):
-                if field_names[i].strip():
+                if field_names[i]:  # 只處理有名稱的欄位
                     field = {
-                        'name': field_names[i].strip(),
+                        'name': field_names[i],
                         'type': field_types[i],
-                        'options': [opt.strip() for opt in field_options[i].split(',') if opt.strip()] if field_options[i] else []
                     }
+                    if field_types[i] in ['radio', 'checkbox'] and field_options[i]:
+                        field['options'] = [opt.strip() for opt in field_options[i].split(',')]
                     custom_fields.append(field)
 
-            # 獲取表單數據
-            title = request.form.get('title')
-            description = request.form.get('description')
-            start_date = request.form.get('start_date')
-            end_date = request.form.get('end_date')
-            meeting_time = request.form.get('meeting_time')
-            location = request.form.get('location')
-            fee = int(request.form.get('fee', 0))
-            organizer = request.form.get('organizer')
-            co_organizers = request.form.get('co_organizers', '').strip().split('\n')
-            co_organizers = [org.strip() for org in co_organizers if org.strip()]
-            notes_label = request.form.get('notes_label', '其他備註')
+            event_data = {
+                'title': request.form['title'],
+                'description': request.form['description'],
+                'start_date': request.form['start_date'],
+                'end_date': request.form['end_date'],
+                'meeting_time': request.form['meeting_time'],
+                'location': request.form['location'],
+                'fee': int(request.form['fee']),
+                'organizer': request.form['organizer'],
+                'co_organizers': [line.strip() for line in request.form['co_organizers'].split('\n') if line.strip()],
+                'custom_fields': custom_fields,
+                'notes_label': request.form.get('notes_label', ''),
+                'reference_files': event.get('reference_files', [])
+            }
 
-            # 更新活動
-            events_collection.update_one(
-                {'_id': ObjectId(event_id)},
-                {'$set': {
-                    'title': title,
-                    'description': description,
-                    'start_date': start_date,
-                    'end_date': end_date,
-                    'meeting_time': meeting_time,
-                    'location': location,
-                    'fee': fee,
-                    'organizer': organizer,
-                    'co_organizers': co_organizers,
-                    'custom_fields': custom_fields,
-                    'notes_label': notes_label
-                }}
-            )
-            flash('活動已更新')
-            return redirect(url_for('admin'))
+            # 處理檔案上傳
+            if 'reference_files' in request.files:
+                files = request.files.getlist('reference_files')
+                for file in files:
+                    if file and file.filename and allowed_file(file.filename):
+                        filename = secure_filename(file.filename)
+                        file_id = fs.put(file, filename=filename)
+                        event_data['reference_files'].append({
+                            '_id': file_id,
+                            'filename': filename
+                        })
 
+            try:
+                events_collection.update_one(
+                    {'_id': ObjectId(event_id)},
+                    {'$set': event_data}
+                )
+                flash('活動更新成功！')
+                return redirect(url_for('admin'))
+            except Exception as e:
+                print(f"Error updating event: {str(e)}")
+                flash('更新活動時發生錯誤，請稍後再試')
+        
         return render_template('event_form.html', event=event, is_new=False)
     except Exception as e:
-        print(f"Error editing event: {str(e)}")
-        flash('編輯活動時發生錯誤')
+        print(f"Error in edit_event: {str(e)}")
+        flash('無效的活動 ID')
         return redirect(url_for('admin'))
 
 @app.route('/admin/event/<event_id>/delete', methods=['POST'])
@@ -335,6 +355,44 @@ def delete_event(event_id):
         print(f"Error deleting event: {str(e)}")
     
     return redirect(url_for('admin'))
+
+@app.route('/download/<file_id>')
+def download_file(file_id):
+    try:
+        file_data = fs.get(ObjectId(file_id))
+        return send_file(
+            file_data,
+            download_name=file_data.filename,
+            as_attachment=True
+        )
+    except Exception as e:
+        print(f"Error downloading file: {str(e)}")
+        flash('下載檔案時發生錯誤')
+        return redirect(url_for('index'))
+
+@app.route('/admin/event/<event_id>/file/<file_id>/delete', methods=['POST'])
+@login_required
+def delete_file(event_id, file_id):
+    if not current_user.is_admin:
+        flash('您沒有權限執行此操作')
+        return redirect(url_for('index'))
+    
+    try:
+        # 從活動中移除檔案記錄
+        events_collection.update_one(
+            {'_id': ObjectId(event_id)},
+            {'$pull': {'reference_files': {'_id': ObjectId(file_id)}}}
+        )
+        
+        # 從 GridFS 中刪除檔案
+        fs.delete(ObjectId(file_id))
+        
+        flash('檔案已刪除')
+    except Exception as e:
+        print(f"Error deleting file: {str(e)}")
+        flash('刪除檔案時發生錯誤')
+    
+    return redirect(url_for('edit_event', event_id=event_id))
 
 # 創建管理員帳號
 def create_admin():

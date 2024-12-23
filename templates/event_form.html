@@ -49,6 +49,31 @@
                 <small class="text-muted">若有多位協辦人員，請每行輸入一位</small>
             </div>
             
+            <div class="mb-3">
+                <label for="reference_files" class="form-label">參考資料</label>
+                <input type="file" class="form-control" id="reference_files" name="reference_files" multiple 
+                       accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx">
+                <small class="text-muted">可上傳圖片、PDF、Office 文件等</small>
+                {% if event.reference_files %}
+                <div class="mt-2">
+                    <p class="mb-2">已上傳的檔案：</p>
+                    <ul class="list-unstyled">
+                        {% for file in event.reference_files %}
+                        <li class="mb-1">
+                            <a href="{{ url_for('download_file', file_id=file._id) }}" target="_blank">
+                                <i class="fas fa-file"></i> {{ file.filename }}
+                            </a>
+                            <button type="button" class="btn btn-sm btn-outline-danger delete-file" 
+                                    data-file-id="{{ file._id }}">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                {% endif %}
+            </div>
+            
             <!-- 自訂欄位區域 -->
             <div class="mb-3">
                 <label class="form-label">報名表單欄位</label>
@@ -102,9 +127,12 @@
     </div>
 </div>
 
-<!-- 自訂欄位的 JavaScript -->
+{% endblock %}
+
+{% block scripts %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // 刪除欄位的事件處理
     const container = document.getElementById('custom_fields_container');
     const addButton = document.getElementById('add_field');
 
@@ -143,6 +171,29 @@ document.addEventListener('DOMContentLoaded', function() {
             const fieldItem = e.target.closest('.custom-field-item');
             fieldItem.remove();
         }
+    });
+
+    // 刪除檔案
+    document.querySelectorAll('.delete-file').forEach(button => {
+        button.addEventListener('click', function() {
+            if (confirm('確定要刪除此檔案嗎？')) {
+                const fileId = this.dataset.fileId;
+                const eventId = window.location.pathname.split('/').slice(-2)[0];
+                
+                fetch(`/admin/event/${eventId}/file/${fileId}/delete`, {
+                    method: 'POST'
+                }).then(response => {
+                    if (response.ok) {
+                        this.closest('li').remove();
+                    } else {
+                        alert('刪除檔案時發生錯誤，請稍後再試');
+                    }
+                }).catch(error => {
+                    console.error('Error:', error);
+                    alert('刪除檔案時發生錯誤，請稍後再試');
+                });
+            }
+        });
     });
 });
 </script>
