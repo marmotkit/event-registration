@@ -36,9 +36,11 @@
             display: flex;
             align-items: center;
             gap: 6px;
+            padding: 0.5rem 1rem;
         }
         .nav-link i {
             font-size: 1.1rem;
+            opacity: 0.9;
         }
     </style>
 </head>
@@ -46,7 +48,7 @@
     <nav class="navbar navbar-expand-lg navbar-dark bg-primary mb-4">
         <div class="container">
             <a class="navbar-brand" href="{{ url_for('index') }}">
-                <i class="fas fa-university brand-icon"></i>
+                <i class="fas fa-graduation-cap brand-icon"></i>
                 <span class="brand-text">NTHU EMBA24 活動報名系統</span>
             </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
