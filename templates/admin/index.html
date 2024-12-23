@@ -15,7 +15,8 @@
                 <thead>
                     <tr>
                         <th>活動名稱</th>
-                        <th>日期</th>
+                        <th>活動日期</th>
+                        <th>集合時間</th>
                         <th>地點</th>
                         <th>報名人數</th>
                         <th>操作</th>
@@ -25,7 +26,14 @@
                     {% for event in events %}
                     <tr>
                         <td>{{ event.title }}</td>
-                        <td>{{ event.date }}</td>
+                        <td>
+                            {% if event.start_date == event.end_date %}
+                                {{ event.start_date }}
+                            {% else %}
+                                {{ event.start_date }} 至<br>{{ event.end_date }}
+                            {% endif %}
+                        </td>
+                        <td>{{ event.meeting_time or '-' }}</td>
                         <td>{{ event.location }}</td>
                         <td>{{ event.registrations|length }}</td>
                         <td>
@@ -47,7 +55,7 @@
                     </tr>
                     {% else %}
                     <tr>
-                        <td colspan="5" class="text-center">尚無活動</td>
+                        <td colspan="6" class="text-center">尚無活動</td>
                     </tr>
                     {% endfor %}
                 </tbody>
