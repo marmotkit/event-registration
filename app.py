@@ -56,7 +56,10 @@ def load_user(user_id):
 # 路由
 @app.route('/')
 def index():
-    events = list(events_collection.find())
+    events = list(events_collection.find().sort('start_date', 1))
+    for event in events:
+        # 獲取報名人數
+        event['registrations'] = list(registrations_collection.find({'event_id': event['_id']}))
     return render_template('index.html', events=events)
 
 @app.route('/event/<event_id>')
@@ -177,11 +180,10 @@ def admin():
         flash('無權限訪問此頁面')
         return redirect(url_for('index'))
     
-    events = list(events_collection.find())
-    # 為每個活動添加報名人數
+    events = list(events_collection.find().sort('start_date', 1))
     for event in events:
-        event['registration_count'] = registrations_collection.count_documents({'event_id': event['_id']})
-    
+        # 獲取報名人數
+        event['registrations'] = list(registrations_collection.find({'event_id': event['_id']}))
     return render_template('admin/index.html', events=events)
 
 @app.route('/admin/event/new', methods=['GET', 'POST'])
