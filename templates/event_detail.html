@@ -50,10 +50,10 @@
                         <td>{{ registration.email }}</td>
                         {% if event.custom_fields %}
                             {% for field in event.custom_fields %}
-                                <td>{{ registration.custom_responses.get(field, '') }}</td>
+                                <td>{{ registration.custom_fields.get(field, '') }}</td>
                             {% endfor %}
                         {% endif %}
-                        <td>{{ registration.created_at }}</td>
+                        <td>{{ registration.registration_time.strftime('%Y-%m-%d %H:%M') if registration.registration_time else '' }}</td>
                     </tr>
                     {% endfor %}
                 </tbody>
