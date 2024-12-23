@@ -28,6 +28,11 @@ def add_header(response):
     response.headers['Expires'] = '-1'
     return response
 
+# 添加時間戳到所有模板
+@app.context_processor
+def inject_timestamp():
+    return {'timestamp': datetime.now().timestamp()}
+
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'login'
