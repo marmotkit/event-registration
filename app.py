@@ -244,17 +244,34 @@ def logout():
 @login_required
 def admin():
     if not current_user.is_admin:
-        flash('無權限訪問此頁面')
+        flash('您沒有權限訪問此頁面')
         return redirect(url_for('index'))
     
-    events = list(events_collection.find().sort('start_date', -1))
-    # 清理每個活動的自定義欄位
-    for event in events:
-        event['custom_fields'] = clean_custom_fields(event.get('custom_fields', []))
-        # 確保每個活動都有 fee 欄位
-        if 'fee' not in event:
-            event['fee'] = 0
-    return render_template('admin/index.html', events=events)
+    try:
+        # 獲取所有活動並按日期排序
+        events = list(events_collection.find().sort('start_date', -1))
+        
+        # 對每個活動添加報名和費用統計
+        for event in events:
+            # 獲取報名資料
+            registrations = list(registrations_collection.find({'event_id': event['_id']}))
+            event['registrations'] = registrations
+            event['registration_count'] = len(registrations)
+            
+            # 計算已繳費人數和金額
+            paid_count = sum(1 for reg in registrations if reg.get('has_paid', False))
+            event['paid_count'] = paid_count
+            event['paid_amount'] = paid_count * event.get('fee', 0)
+            event['total_amount'] = event['registration_count'] * event.get('fee', 0)
+            
+            # 清理自定義欄位
+            event['custom_fields'] = clean_custom_fields(event.get('custom_fields', []))
+        
+        return render_template('admin.html', events=events)
+    except Exception as e:
+        print(f"Error in admin: {str(e)}")
+        flash('載入活動列表時發生錯誤')
+        return render_template('admin.html', events=[])
 
 @app.route('/admin/event/new', methods=['GET', 'POST'])
 @login_required

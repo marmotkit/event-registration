@@ -9,56 +9,129 @@
         </a>
     </div>
 
+    <div class="table-responsive">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>活動名稱</th>
+                    <th>活動日期</th>
+                    <th>集合時間</th>
+                    <th>地點</th>
+                    <th>費用</th>
+                    <th>報名人數</th>
+                    <th>總費用</th>
+                    <th>操作</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for event in events %}
+                <tr>
+                    <td>{{ event.title }}</td>
+                    <td>
+                        {% if event.start_date == event.end_date %}
+                            {{ event.start_date }}
+                        {% else %}
+                            {{ event.start_date }} 至 {{ event.end_date }}
+                        {% endif %}
+                    </td>
+                    <td>{{ event.meeting_time }}</td>
+                    <td>{{ event.location }}</td>
+                    <td>{{ event.fee }}</td>
+                    <td>{{ event.registration_count }}</td>
+                    <td>NT$ {{ event.registration_count * event.fee }}</td>
+                    <td>
+                        <div class="btn-group">
+                            <a href="{{ url_for('view_event', event_id=event._id) }}" class="btn btn-info btn-sm">
+                                <i class="fas fa-eye"></i> 查看
+                            </a>
+                            <a href="{{ url_for('edit_event', event_id=event._id) }}" class="btn btn-warning btn-sm">
+                                <i class="fas fa-edit"></i> 編輯
+                            </a>
+                            <button onclick="deleteEvent('{{ event._id }}')" class="btn btn-danger btn-sm">
+                                <i class="fas fa-trash"></i> 刪除
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+            <tfoot>
+                <tr class="table-info">
+                    <td colspan="5" class="text-end"><strong>總計：</strong></td>
+                    <td><strong>{{ events|sum(attribute='registration_count') }}</strong></td>
+                    <td colspan="2"><strong>NT$ {{ events|sum(attribute='total_amount') }}</strong></td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+
     {% for event in events %}
-    <div class="card mb-4">
+    {% if event.registration_count > 0 %}
+    <div class="card mt-4">
+        <div class="card-header">
+            <h5 class="mb-0">{{ event.title }} - 報名名單</h5>
+        </div>
         <div class="card-body">
-            <div class="row">
-                <div class="col-md-8">
-                    <h2 class="card-title">{{ event.title }}</h2>
-                    <p class="card-text">{{ event.description }}</p>
-                    <div class="row">
-                        <div class="col-md-6">
-                            {% if event.start_date == event.end_date %}
-                            <p><i class="fas fa-calendar-alt"></i> 活動日期：{{ event.start_date }}</p>
-                            {% else %}
-                            <p><i class="fas fa-calendar-alt"></i> 活動日期：{{ event.start_date }} 至 {{ event.end_date }}</p>
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>姓名</th>
+                            <th>電話</th>
+                            <th>電子郵件</th>
+                            {% for field in event.custom_fields %}
+                            <th>{{ field.name }}</th>
+                            {% endfor %}
+                            {% if event.notes_label %}
+                            <th>{{ event.notes_label }}</th>
                             {% endif %}
-                            <p><i class="fas fa-clock"></i> 集合時間：{{ event.meeting_time }}</p>
-                            <p><i class="fas fa-map-marker-alt"></i> 活動地點：{{ event.location }}</p>
-                            <p><i class="fas fa-dollar-sign"></i> 活動費用：NT$ {{ event.fee }}</p>
-                        </div>
-                        <div class="col-md-6">
-                            <p><i class="fas fa-user"></i> 主辦人：{{ event.organizer }}</p>
-                            {% if event.co_organizers %}
-                            <p><i class="fas fa-users"></i> 協辦人員：{{ ', '.join(event.co_organizers) }}</p>
+                            <th>報名時間</th>
+                            <th class="text-center">繳費狀態</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for registration in event.registrations %}
+                        <tr>
+                            <td>{{ registration.name }}</td>
+                            <td>{{ registration.phone }}</td>
+                            <td>{{ registration.email }}</td>
+                            {% for field in event.custom_fields %}
+                            <td>
+                                {% if field.type == 'checkbox' %}
+                                    {{ ', '.join(registration.custom_fields.get(field.name, [])) }}
+                                {% else %}
+                                    {{ registration.custom_fields.get(field.name, '') }}
+                                {% endif %}
+                            </td>
+                            {% endfor %}
+                            {% if event.notes_label %}
+                            <td>{{ registration.notes }}</td>
                             {% endif %}
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="card">
-                        <div class="card-body">
-                            <h5 class="card-title">報名統計</h5>
-                            <p class="mb-2">報名人數：<strong>{{ event.registration_count }} 人</strong></p>
-                            <p class="mb-2">已繳費：<strong>NT$ {{ event.paid_amount }}</strong></p>
-                            <p class="mb-0">總費用：<strong>NT$ {{ event.total_amount }}</strong></p>
-                        </div>
-                    </div>
-                    <div class="mt-3 d-grid gap-2">
-                        <a href="{{ url_for('view_event', event_id=event._id) }}" class="btn btn-info">
-                            <i class="fas fa-list"></i> 查看報名名單
-                        </a>
-                        <a href="{{ url_for('edit_event', event_id=event._id) }}" class="btn btn-warning">
-                            <i class="fas fa-edit"></i> 編輯活動
-                        </a>
-                        <button class="btn btn-danger" onclick="deleteEvent('{{ event._id }}')">
-                            <i class="fas fa-trash"></i> 刪除活動
-                        </button>
-                    </div>
-                </div>
+                            <td>{{ registration.timestamp.strftime('%Y-%m-%d %H:%M') }}</td>
+                            <td class="text-center">
+                                <div class="form-check form-switch d-flex justify-content-center align-items-center">
+                                    <input class="form-check-input payment-status" type="checkbox" 
+                                           id="payment_{{ registration._id }}"
+                                           data-registration-id="{{ registration._id }}"
+                                           {% if registration.has_paid %}checked{% endif %}
+                                           style="width: 3em; height: 1.5em;">
+                                    <label class="form-check-label ms-2" for="payment_{{ registration._id }}">
+                                        {% if registration.has_paid %}
+                                        <span class="text-success">已繳費</span>
+                                        {% else %}
+                                        <span class="text-danger">未繳費</span>
+                                        {% endif %}
+                                    </label>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>
+    {% endif %}
     {% endfor %}
 </div>
 {% endblock %}
@@ -81,5 +154,43 @@ function deleteEvent(eventId) {
         });
     }
 }
+
+document.addEventListener('DOMContentLoaded', function() {
+    // 處理繳費狀態的切換
+    document.querySelectorAll('.payment-status').forEach(checkbox => {
+        checkbox.addEventListener('change', function() {
+            const registrationId = this.dataset.registrationId;
+            const label = this.parentElement.querySelector('.form-check-label');
+            
+            fetch(`/admin/registration/${registrationId}/toggle_payment`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    alert(data.error);
+                    this.checked = !this.checked;
+                } else {
+                    // 更新標籤文字和樣式
+                    if (this.checked) {
+                        label.innerHTML = '<span class="text-success">已繳費</span>';
+                    } else {
+                        label.innerHTML = '<span class="text-danger">未繳費</span>';
+                    }
+                    // 重新載入頁面以更新統計數據
+                    window.location.reload();
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('更新繳費狀態時發生錯誤');
+                this.checked = !this.checked;
+            });
+        });
+    });
+});
 </script>
 {% endblock %}
