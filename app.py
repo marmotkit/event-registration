@@ -184,6 +184,9 @@ def admin():
     for event in events:
         # 獲取報名人數
         event['registrations'] = list(registrations_collection.find({'event_id': event['_id']}))
+        # 確保每個活動都有 fee 欄位
+        if 'fee' not in event:
+            event['fee'] = 0
     return render_template('admin/index.html', events=events)
 
 @app.route('/admin/event/new', methods=['GET', 'POST'])
