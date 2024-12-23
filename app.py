@@ -47,40 +47,48 @@ def index():
 
 @app.route('/event/<event_id>')
 def event_detail(event_id):
-    event = events_collection.find_one({'_id': ObjectId(event_id)})
-    if not event:
-        flash('活動不存在')
+    try:
+        event = events_collection.find_one({'_id': ObjectId(event_id)})
+        if not event:
+            flash('活動不存在')
+            return redirect(url_for('index'))
+        
+        registrations = list(registrations_collection.find({'event_id': ObjectId(event_id)}))
+        return render_template('event_detail.html', event=event, registrations=registrations)
+    except Exception as e:
+        flash('無效的活動 ID')
         return redirect(url_for('index'))
-    
-    registrations = list(registrations_collection.find({'event_id': ObjectId(event_id)}))
-    return render_template('event_detail.html', event=event, registrations=registrations)
 
 @app.route('/register/<event_id>', methods=['GET', 'POST'])
 def register(event_id):
-    event = events_collection.find_one({'_id': ObjectId(event_id)})
-    if not event:
-        flash('活動不存在')
-        return redirect(url_for('index'))
+    try:
+        event = events_collection.find_one({'_id': ObjectId(event_id)})
+        if not event:
+            flash('活動不存在')
+            return redirect(url_for('index'))
 
-    if request.method == 'POST':
-        registration_data = {
-            'event_id': ObjectId(event_id),
-            'name': request.form['name'],
-            'email': request.form['email'],
-            'phone': request.form['phone'],
-            'custom_responses': {},
-            'created_at': datetime.now().isoformat()
-        }
+        if request.method == 'POST':
+            registration_data = {
+                'event_id': ObjectId(event_id),
+                'name': request.form['name'],
+                'email': request.form['email'],
+                'phone': request.form['phone'],
+                'registration_time': datetime.utcnow()
+            }
+            
+            # 處理自定義欄位
+            if event.get('custom_fields'):
+                for field in event['custom_fields']:
+                    registration_data[field] = request.form.get(field, '')
+            
+            registrations_collection.insert_one(registration_data)
+            flash('報名成功！')
+            return redirect(url_for('event_detail', event_id=event_id))
         
-        if event.get('custom_fields'):
-            for field in event['custom_fields']:
-                registration_data['custom_responses'][field] = request.form.get(field)
-        
-        registrations_collection.insert_one(registration_data)
-        flash('報名成功！')
-        return redirect(url_for('event_detail', event_id=event_id))
-    
-    return render_template('register.html', event=event)
+        return render_template('register.html', event=event)
+    except Exception as e:
+        flash('無效的活動 ID')
+        return redirect(url_for('index'))
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
