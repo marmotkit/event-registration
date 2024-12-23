@@ -194,12 +194,12 @@ def create_admin():
             'password': 'admin123',  # 請更改為安全的密碼
             'is_admin': True
         })
+        print("Admin account created!")
 
 if __name__ == '__main__':
-    # 確保資料夾存在
-    os.makedirs('instance', exist_ok=True)
-    
     # 創建管理員帳號
     create_admin()
-    
     app.run(debug=True)
+else:
+    # 在 production 環境中也創建管理員帳號
+    create_admin()
