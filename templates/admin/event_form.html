@@ -51,12 +51,17 @@
                 </button>
             </div>
 
-            <div class="d-grid gap-2">
+            <div class="d-grid gap-2 mt-4">
                 <button type="submit" class="btn btn-primary">
                     <i class="fas fa-save"></i> 儲存活動
                 </button>
-                <a href="{{ url_for('admin') }}" class="btn btn-outline-secondary">
-                    <i class="fas fa-arrow-left"></i> 返回管理頁面
+                {% if event %}
+                <button type="button" class="btn btn-danger delete-event" data-event-id="{{ event._id }}">
+                    <i class="fas fa-trash"></i> 刪除活動
+                </button>
+                {% endif %}
+                <a href="{{ url_for('admin') }}" class="btn btn-secondary">
+                    <i class="fas fa-times"></i> 取消
                 </a>
             </div>
         </form>

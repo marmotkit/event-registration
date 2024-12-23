@@ -30,16 +30,16 @@
                         <td>{{ event.registrations|length }}</td>
                         <td>
                             <div class="btn-group" role="group">
-                                <a href="{{ url_for('event_detail', event_id=event.id) }}" 
+                                <a href="{{ url_for('event_detail', event_id=event._id) }}" 
                                    class="btn btn-sm btn-outline-primary">
                                     <i class="fas fa-eye"></i> 查看
                                 </a>
-                                <a href="{{ url_for('edit_event', event_id=event.id) }}" 
+                                <a href="{{ url_for('edit_event', event_id=event._id) }}" 
                                    class="btn btn-sm btn-outline-secondary">
                                     <i class="fas fa-edit"></i> 編輯
                                 </a>
                                 <button type="button" class="btn btn-sm btn-outline-danger delete-event" 
-                                        data-event-id="{{ event.id }}">
+                                        data-event-id="{{ event._id }}">
                                     <i class="fas fa-trash"></i> 刪除
                                 </button>
                             </div>
