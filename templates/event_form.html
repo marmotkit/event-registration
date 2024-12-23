@@ -13,13 +13,31 @@
                 <label for="description" class="form-label">活動描述</label>
                 <textarea class="form-control" id="description" name="description" rows="3" required>{{ event.description }}</textarea>
             </div>
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <label for="start_date" class="form-label">活動開始日期</label>
+                    <input type="date" class="form-control" id="start_date" name="start_date" value="{{ event.start_date }}" required>
+                </div>
+                <div class="col-md-6">
+                    <label for="end_date" class="form-label">活動結束日期</label>
+                    <input type="date" class="form-control" id="end_date" name="end_date" value="{{ event.end_date }}" required>
+                    <small class="text-muted">單日活動請填寫相同日期</small>
+                </div>
+            </div>
             <div class="mb-3">
-                <label for="date" class="form-label">活動時間</label>
-                <input type="datetime-local" class="form-control" id="date" name="date" value="{{ event.date }}" required>
+                <label for="meeting_time" class="form-label">集合時間</label>
+                <input type="time" class="form-control" id="meeting_time" name="meeting_time" value="{{ event.meeting_time }}" required>
             </div>
             <div class="mb-3">
                 <label for="location" class="form-label">活動地點</label>
                 <input type="text" class="form-control" id="location" name="location" value="{{ event.location }}" required>
+            </div>
+            <div class="mb-3">
+                <label for="fee" class="form-label">活動費用</label>
+                <div class="input-group">
+                    <span class="input-group-text">NT$</span>
+                    <input type="number" class="form-control" id="fee" name="fee" value="{{ event.fee }}" min="0" required>
+                </div>
             </div>
             <div class="mb-3">
                 <label for="organizer" class="form-label">主辦人</label>
@@ -30,11 +48,50 @@
                 <textarea class="form-control" id="co_organizers" name="co_organizers" rows="2">{{ '\n'.join(event.co_organizers) if event.co_organizers else '' }}</textarea>
                 <small class="text-muted">若有多位協辦人員，請每行輸入一位</small>
             </div>
+            
+            <!-- 自訂欄位區域 -->
             <div class="mb-3">
-                <label for="custom_fields" class="form-label">自訂欄位（每行一個）</label>
-                <textarea class="form-control" id="custom_fields" name="custom_fields" rows="3">{{ '\n'.join(event.custom_fields) if event.custom_fields else '' }}</textarea>
-                <small class="text-muted">每行輸入一個欄位名稱，這些欄位會出現在報名表單中</small>
+                <label class="form-label">報名表單欄位</label>
+                <div id="custom_fields_container">
+                    {% if event.custom_fields %}
+                        {% for field in event.custom_fields %}
+                        <div class="custom-field-item mb-2">
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <input type="text" class="form-control" name="field_names[]" value="{{ field.name }}" placeholder="欄位名稱" required>
+                                </div>
+                                <div class="col-md-3">
+                                    <select class="form-select" name="field_types[]">
+                                        <option value="text" {% if field.type == 'text' %}selected{% endif %}>文字</option>
+                                        <option value="radio" {% if field.type == 'radio' %}selected{% endif %}>單選</option>
+                                        <option value="checkbox" {% if field.type == 'checkbox' %}selected{% endif %}>複選</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <input type="text" class="form-control" name="field_options[]" value="{{ field.options|join(',') if field.options else '' }}" placeholder="選項（用逗號分隔）">
+                                </div>
+                                <div class="col-md-1">
+                                    <button type="button" class="btn btn-danger btn-sm remove-field"><i class="fas fa-times"></i></button>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% endif %}
+                </div>
+                <button type="button" class="btn btn-secondary btn-sm mt-2" id="add_field">
+                    <i class="fas fa-plus"></i> 新增欄位
+                </button>
+                <small class="text-muted d-block">單選和複選欄位請在選項欄位中輸入選項，用逗號分隔</small>
             </div>
+
+            <div class="mb-3">
+                <label for="notes" class="form-label">備註欄位說明</label>
+                <input type="text" class="form-control" id="notes_label" name="notes_label" 
+                       value="{{ event.notes_label or '其他備註' }}" 
+                       placeholder="例如：有特殊需求請在此說明">
+                <small class="text-muted">此欄位會顯示在報名表單最後，供報名者填寫額外資訊</small>
+            </div>
+
             <div class="text-end">
                 <a href="{{ url_for('admin') }}" class="btn btn-secondary">取消</a>
                 <button type="submit" class="btn btn-primary">{% if is_new %}建立活動{% else %}儲存變更{% endif %}</button>
@@ -42,4 +99,47 @@
         </form>
     </div>
 </div>
+
+<!-- 自訂欄位的 JavaScript -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const container = document.getElementById('custom_fields_container');
+    const addButton = document.getElementById('add_field');
+
+    // 添加新欄位
+    addButton.addEventListener('click', function() {
+        const fieldDiv = document.createElement('div');
+        fieldDiv.className = 'custom-field-item mb-2';
+        fieldDiv.innerHTML = `
+            <div class="row">
+                <div class="col-md-4">
+                    <input type="text" class="form-control" name="field_names[]" placeholder="欄位名稱" required>
+                </div>
+                <div class="col-md-3">
+                    <select class="form-select" name="field_types[]">
+                        <option value="text">文字</option>
+                        <option value="radio">單選</option>
+                        <option value="checkbox">複選</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <input type="text" class="form-control" name="field_options[]" placeholder="選項（用逗號分隔）">
+                </div>
+                <div class="col-md-1">
+                    <button type="button" class="btn btn-danger btn-sm remove-field"><i class="fas fa-times"></i></button>
+                </div>
+            </div>
+        `;
+        container.appendChild(fieldDiv);
+    });
+
+    // 刪除欄位
+    container.addEventListener('click', function(e) {
+        if (e.target.classList.contains('remove-field') || e.target.closest('.remove-field')) {
+            const fieldItem = e.target.closest('.custom-field-item');
+            fieldItem.remove();
+        }
+    });
+});
+</script>
 {% endblock %}

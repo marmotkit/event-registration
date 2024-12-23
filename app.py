@@ -130,7 +130,7 @@ def register(event_id):
             custom_fields = {}
             if event.get('custom_fields'):
                 for field in event['custom_fields']:
-                    custom_fields[field] = request.form.get(field, '')
+                    custom_fields[field['name']] = request.form.get(field['name'], '')
             registration_data['custom_fields'] = custom_fields
             
             try:
@@ -192,14 +192,33 @@ def new_event():
         return redirect(url_for('index'))
 
     if request.method == 'POST':
+        # 處理自訂欄位
+        field_names = request.form.getlist('field_names[]')
+        field_types = request.form.getlist('field_types[]')
+        field_options = request.form.getlist('field_options[]')
+        
+        custom_fields = []
+        for i in range(len(field_names)):
+            if field_names[i].strip():
+                field = {
+                    'name': field_names[i].strip(),
+                    'type': field_types[i],
+                    'options': [opt.strip() for opt in field_options[i].split(',') if opt.strip()] if field_options[i] else []
+                }
+                custom_fields.append(field)
+
         event_data = {
             'title': request.form.get('title'),
             'description': request.form.get('description'),
-            'date': request.form.get('date'),
+            'start_date': request.form.get('start_date'),
+            'end_date': request.form.get('end_date'),
+            'meeting_time': request.form.get('meeting_time'),
             'location': request.form.get('location'),
+            'fee': int(request.form.get('fee', 0)),
             'organizer': request.form.get('organizer'),
             'co_organizers': [org.strip() for org in request.form.get('co_organizers', '').strip().split('\n') if org.strip()],
-            'custom_fields': [field.strip() for field in request.form.get('custom_fields', '').strip().split('\n') if field.strip()],
+            'custom_fields': custom_fields,
+            'notes_label': request.form.get('notes_label', '其他備註'),
             'created_at': datetime.now(pytz.timezone('Asia/Taipei')).isoformat()
         }
         result = events_collection.insert_one(event_data)
@@ -210,11 +229,15 @@ def new_event():
     event = {
         'title': '',
         'description': '',
-        'date': '',
+        'start_date': '',
+        'end_date': '',
+        'meeting_time': '',
         'location': '',
+        'fee': 0,
         'organizer': '',
         'co_organizers': [],
-        'custom_fields': []
+        'custom_fields': [],
+        'notes_label': '其他備註'
     }
     return render_template('event_form.html', event=event, is_new=True)
 
@@ -232,16 +255,33 @@ def edit_event(event_id):
             return redirect(url_for('admin'))
 
         if request.method == 'POST':
+            # 處理自訂欄位
+            field_names = request.form.getlist('field_names[]')
+            field_types = request.form.getlist('field_types[]')
+            field_options = request.form.getlist('field_options[]')
+            
+            custom_fields = []
+            for i in range(len(field_names)):
+                if field_names[i].strip():
+                    field = {
+                        'name': field_names[i].strip(),
+                        'type': field_types[i],
+                        'options': [opt.strip() for opt in field_options[i].split(',') if opt.strip()] if field_options[i] else []
+                    }
+                    custom_fields.append(field)
+
             # 獲取表單數據
             title = request.form.get('title')
             description = request.form.get('description')
-            date = request.form.get('date')
+            start_date = request.form.get('start_date')
+            end_date = request.form.get('end_date')
+            meeting_time = request.form.get('meeting_time')
             location = request.form.get('location')
+            fee = int(request.form.get('fee', 0))
             organizer = request.form.get('organizer')
             co_organizers = request.form.get('co_organizers', '').strip().split('\n')
             co_organizers = [org.strip() for org in co_organizers if org.strip()]
-            custom_fields = request.form.get('custom_fields', '').strip().split('\n')
-            custom_fields = [field.strip() for field in custom_fields if field.strip()]
+            notes_label = request.form.get('notes_label', '其他備註')
 
             # 更新活動
             events_collection.update_one(
@@ -249,11 +289,15 @@ def edit_event(event_id):
                 {'$set': {
                     'title': title,
                     'description': description,
-                    'date': date,
+                    'start_date': start_date,
+                    'end_date': end_date,
+                    'meeting_time': meeting_time,
                     'location': location,
+                    'fee': fee,
                     'organizer': organizer,
                     'co_organizers': co_organizers,
-                    'custom_fields': custom_fields
+                    'custom_fields': custom_fields,
+                    'notes_label': notes_label
                 }}
             )
             flash('活動已更新')

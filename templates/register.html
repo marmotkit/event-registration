@@ -3,77 +3,84 @@
 {% block content %}
 <div class="card">
     <div class="card-body">
-        <h1 class="card-title mb-4">報名 - {{ event.title }}</h1>
-        
-        <div class="mb-4">
-            <h5>活動資訊：</h5>
-            <p><i class="fas fa-calendar-alt"></i> 時間：{{ event.date }}</p>
-            <p><i class="fas fa-map-marker-alt"></i> 地點：{{ event.location }}</p>
-            <p>{{ event.description }}</p>
+        <h1 class="card-title">{{ event.title }} - 活動報名</h1>
+        <div class="event-info mb-4">
+            <p class="card-text">{{ event.description }}</p>
+            <div class="row">
+                <div class="col-md-6">
+                    {% if event.start_date == event.end_date %}
+                    <p><i class="fas fa-calendar-alt"></i> 活動日期：{{ event.start_date }}</p>
+                    {% else %}
+                    <p><i class="fas fa-calendar-alt"></i> 活動日期：{{ event.start_date }} 至 {{ event.end_date }}</p>
+                    {% endif %}
+                    <p><i class="fas fa-clock"></i> 集合時間：{{ event.meeting_time }}</p>
+                    <p><i class="fas fa-map-marker-alt"></i> 活動地點：{{ event.location }}</p>
+                    <p><i class="fas fa-dollar-sign"></i> 活動費用：NT$ {{ event.fee }}</p>
+                </div>
+                <div class="col-md-6">
+                    <p><i class="fas fa-user"></i> 主辦人：{{ event.organizer }}</p>
+                    {% if event.co_organizers %}
+                    <p><i class="fas fa-users"></i> 協辦人員：{{ ', '.join(event.co_organizers) }}</p>
+                    {% endif %}
+                </div>
+            </div>
         </div>
 
-        <form method="POST" class="needs-validation" novalidate>
+        <form method="POST">
             <div class="mb-3">
-                <label for="name" class="form-label">姓名 *</label>
+                <label for="name" class="form-label">姓名</label>
                 <input type="text" class="form-control" id="name" name="name" required>
-                <div class="invalid-feedback">
-                    請輸入姓名
-                </div>
             </div>
-
             <div class="mb-3">
-                <label for="email" class="form-label">電子郵件 *</label>
-                <input type="email" class="form-control" id="email" name="email" required>
-                <div class="invalid-feedback">
-                    請輸入有效的電子郵件地址
-                </div>
-            </div>
-
-            <div class="mb-3">
-                <label for="phone" class="form-label">電話 *</label>
+                <label for="phone" class="form-label">電話</label>
                 <input type="tel" class="form-control" id="phone" name="phone" required>
-                <div class="invalid-feedback">
-                    請輸入電話號碼
-                </div>
+            </div>
+            <div class="mb-3">
+                <label for="email" class="form-label">電子郵件</label>
+                <input type="email" class="form-control" id="email" name="email" required>
             </div>
 
             {% if event.custom_fields %}
                 {% for field in event.custom_fields %}
-                <div class="mb-3">
-                    <label for="{{ field }}" class="form-label">{{ field }}</label>
-                    <input type="text" class="form-control" id="{{ field }}" name="{{ field }}">
-                </div>
+                    <div class="mb-3">
+                        <label for="{{ field.name }}" class="form-label">{{ field.name }}</label>
+                        {% if field.type == 'text' %}
+                            <input type="text" class="form-control" id="{{ field.name }}" name="{{ field.name }}" required>
+                        {% elif field.type == 'radio' %}
+                            {% for option in field.options %}
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="{{ field.name }}" 
+                                       id="{{ field.name }}_{{ loop.index }}" value="{{ option }}" required>
+                                <label class="form-check-label" for="{{ field.name }}_{{ loop.index }}">
+                                    {{ option }}
+                                </label>
+                            </div>
+                            {% endfor %}
+                        {% elif field.type == 'checkbox' %}
+                            {% for option in field.options %}
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="{{ field.name }}[]" 
+                                       id="{{ field.name }}_{{ loop.index }}" value="{{ option }}">
+                                <label class="form-check-label" for="{{ field.name }}_{{ loop.index }}">
+                                    {{ option }}
+                                </label>
+                            </div>
+                            {% endfor %}
+                        {% endif %}
+                    </div>
                 {% endfor %}
             {% endif %}
 
-            <div class="d-grid gap-2">
-                <button type="submit" class="btn btn-primary">
-                    <i class="fas fa-paper-plane"></i> 送出報名
-                </button>
-                <a href="{{ url_for('event_detail', event_id=event._id) }}" class="btn btn-secondary">
-                    <i class="fas fa-arrow-left"></i> 返回活動詳情
-                </a>
+            <div class="mb-3">
+                <label for="notes" class="form-label">{{ event.notes_label }}</label>
+                <textarea class="form-control" id="notes" name="notes" rows="3"></textarea>
+            </div>
+
+            <div class="text-end">
+                <a href="{{ url_for('index') }}" class="btn btn-secondary">取消</a>
+                <button type="submit" class="btn btn-primary">確認報名</button>
             </div>
         </form>
     </div>
 </div>
-{% endblock %}
-
-{% block scripts %}
-<script>
-// 表單驗證
-(function () {
-    'use strict'
-    var forms = document.querySelectorAll('.needs-validation')
-    Array.prototype.slice.call(forms).forEach(function (form) {
-        form.addEventListener('submit', function (event) {
-            if (!form.checkValidity()) {
-                event.preventDefault()
-                event.stopPropagation()
-            }
-            form.classList.add('was-validated')
-        }, false)
-    })
-})()
-</script>
 {% endblock %}
