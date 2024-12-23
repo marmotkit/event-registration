@@ -18,7 +18,9 @@
                         <th>活動日期</th>
                         <th>集合時間</th>
                         <th>地點</th>
+                        <th>費用</th>
                         <th>報名人數</th>
+                        <th>總費用</th>
                         <th>操作</th>
                     </tr>
                 </thead>
@@ -35,7 +37,9 @@
                         </td>
                         <td>{{ event.meeting_time or '-' }}</td>
                         <td>{{ event.location }}</td>
+                        <td>{{ event.fee }}</td>
                         <td>{{ event.registrations|length }}</td>
+                        <td>{{ event.fee * event.registrations|length }}</td>
                         <td>
                             <div class="btn-group" role="group">
                                 <a href="{{ url_for('event_detail', event_id=event._id) }}" 
@@ -55,11 +59,40 @@
                     </tr>
                     {% else %}
                     <tr>
-                        <td colspan="6" class="text-center">尚無活動</td>
+                        <td colspan="8" class="text-center">尚無活動</td>
                     </tr>
                     {% endfor %}
                 </tbody>
+                <tfoot>
+                    <tr class="table-info">
+                        <td colspan="5" class="text-end"><strong>總計：</strong></td>
+                        <td><strong>{{ events|sum(attribute='registrations')|length }}</strong></td>
+                        <td><strong>{{ events|sum(attribute='fee', multiply_by='registrations|length') }}</strong></td>
+                        <td></td>
+                    </tr>
+                </tfoot>
             </table>
+        </div>
+    </div>
+</div>
+
+<!-- 刪除確認對話框 -->
+<div class="modal fade" id="deleteConfirmModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">確認刪除</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                確定要刪除這個活動嗎？此操作無法復原。
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <form id="deleteEventForm" method="POST" style="display: inline;">
+                    <button type="submit" class="btn btn-danger">確定刪除</button>
+                </form>
+            </div>
         </div>
     </div>
 </div>
@@ -67,29 +100,16 @@
 
 {% block scripts %}
 <script>
-document.querySelectorAll('.delete-event').forEach(button => {
-    button.addEventListener('click', async function() {
-        if (confirm('確定要刪除此活動嗎？此操作無法復原。')) {
+document.addEventListener('DOMContentLoaded', function() {
+    const deleteModal = new bootstrap.Modal(document.getElementById('deleteConfirmModal'));
+    const deleteForm = document.getElementById('deleteEventForm');
+    
+    document.querySelectorAll('.delete-event').forEach(button => {
+        button.addEventListener('click', function() {
             const eventId = this.dataset.eventId;
-            try {
-                const response = await fetch(`/admin/event/${eventId}/delete`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    }
-                });
-                
-                if (response.ok) {
-                    // 重新載入頁面以顯示更新後的活動列表
-                    window.location.reload();
-                } else {
-                    alert('刪除活動時發生錯誤，請稍後再試。');
-                }
-            } catch (error) {
-                console.error('Error:', error);
-                alert('刪除活動時發生錯誤，請稍後再試。');
-            }
-        }
+            deleteForm.action = `/admin/event/${eventId}/delete`;
+            deleteModal.show();
+        });
     });
 });
 </script>

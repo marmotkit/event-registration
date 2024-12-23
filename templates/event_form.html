@@ -58,7 +58,8 @@
                         <div class="custom-field-item mb-2">
                             <div class="row">
                                 <div class="col-md-4">
-                                    <input type="text" class="form-control" name="field_names[]" value="{{ field.name }}" placeholder="欄位名稱" required>
+                                    <input type="text" class="form-control" name="field_names[]" 
+                                           value="{{ field.name }}" placeholder="欄位名稱" required>
                                 </div>
                                 <div class="col-md-3">
                                     <select class="form-select" name="field_types[]">
@@ -68,33 +69,34 @@
                                     </select>
                                 </div>
                                 <div class="col-md-4">
-                                    <input type="text" class="form-control" name="field_options[]" value="{{ field.options|join(',') if field.options else '' }}" placeholder="選項（用逗號分隔）">
+                                    <input type="text" class="form-control" name="field_options[]" 
+                                           value="{{ field.options|join(',') if field.options else '' }}" 
+                                           placeholder="選項（用逗號分隔）">
                                 </div>
                                 <div class="col-md-1">
-                                    <button type="button" class="btn btn-danger btn-sm remove-field"><i class="fas fa-times"></i></button>
+                                    <button type="button" class="btn btn-danger btn-sm remove-field">
+                                        <i class="fas fa-times"></i>
+                                    </button>
                                 </div>
                             </div>
                         </div>
                         {% endfor %}
                     {% endif %}
                 </div>
-                <button type="button" class="btn btn-secondary btn-sm mt-2" id="add_field">
+                <button type="button" class="btn btn-outline-primary mt-2" id="add_field">
                     <i class="fas fa-plus"></i> 新增欄位
                 </button>
-                <small class="text-muted d-block">單選和複選欄位請在選項欄位中輸入選項，用逗號分隔</small>
             </div>
 
             <div class="mb-3">
-                <label for="notes" class="form-label">備註欄位說明</label>
+                <label for="notes_label" class="form-label">備註欄位標籤</label>
                 <input type="text" class="form-control" id="notes_label" name="notes_label" 
-                       value="{{ event.notes_label or '其他備註' }}" 
-                       placeholder="例如：有特殊需求請在此說明">
-                <small class="text-muted">此欄位會顯示在報名表單最後，供報名者填寫額外資訊</small>
+                       value="{{ event.notes_label }}" placeholder="例如：其他備註">
             </div>
 
-            <div class="text-end">
-                <a href="{{ url_for('admin') }}" class="btn btn-secondary">取消</a>
-                <button type="submit" class="btn btn-primary">{% if is_new %}建立活動{% else %}儲存變更{% endif %}</button>
+            <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                <a href="{{ url_for('admin') }}" class="btn btn-secondary me-md-2">取消</a>
+                <button type="submit" class="btn btn-primary">儲存</button>
             </div>
         </form>
     </div>
@@ -126,7 +128,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     <input type="text" class="form-control" name="field_options[]" placeholder="選項（用逗號分隔）">
                 </div>
                 <div class="col-md-1">
-                    <button type="button" class="btn btn-danger btn-sm remove-field"><i class="fas fa-times"></i></button>
+                    <button type="button" class="btn btn-danger btn-sm remove-field">
+                        <i class="fas fa-times"></i>
+                    </button>
                 </div>
             </div>
         `;
