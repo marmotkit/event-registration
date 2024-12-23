@@ -26,6 +26,26 @@
             </div>
         </div>
 
+        <div class="card mb-4">
+            <div class="card-body">
+                <h5 class="card-title">報名統計</h5>
+                <div class="row">
+                    <div class="col-md-4">
+                        <p class="mb-1">報名人數</p>
+                        <h3>{{ registrations|length }} 人</h3>
+                    </div>
+                    <div class="col-md-4">
+                        <p class="mb-1">已繳費人數</p>
+                        <h3>{{ registrations|selectattr('has_paid', 'true')|list|length }} 人</h3>
+                    </div>
+                    <div class="col-md-4">
+                        <p class="mb-1">已收費用</p>
+                        <h3>NT$ {{ (registrations|selectattr('has_paid', 'true')|list|length) * event.fee }}</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <h2>報名名單</h2>
         <div class="table-responsive">
             <table class="table">
@@ -41,7 +61,7 @@
                         <th>{{ event.notes_label }}</th>
                         {% endif %}
                         <th>報名時間</th>
-                        <th>繳費狀態</th>
+                        <th class="text-center">繳費狀態</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -63,13 +83,19 @@
                         <td>{{ registration.notes }}</td>
                         {% endif %}
                         <td>{{ registration.timestamp.strftime('%Y-%m-%d %H:%M') }}</td>
-                        <td>
-                            <div class="form-check">
+                        <td class="text-center">
+                            <div class="form-check form-switch d-flex justify-content-center align-items-center">
                                 <input class="form-check-input payment-status" type="checkbox" 
+                                       id="payment_{{ registration._id }}"
                                        data-registration-id="{{ registration._id }}"
-                                       {% if registration.has_paid %}checked{% endif %}>
-                                <label class="form-check-label">
-                                    已繳費
+                                       {% if registration.has_paid %}checked{% endif %}
+                                       style="width: 3em; height: 1.5em;">
+                                <label class="form-check-label ms-2" for="payment_{{ registration._id }}">
+                                    {% if registration.has_paid %}
+                                    <span class="text-success">已繳費</span>
+                                    {% else %}
+                                    <span class="text-danger">未繳費</span>
+                                    {% endif %}
                                 </label>
                             </div>
                         </td>
@@ -93,6 +119,7 @@ document.addEventListener('DOMContentLoaded', function() {
     document.querySelectorAll('.payment-status').forEach(checkbox => {
         checkbox.addEventListener('change', function() {
             const registrationId = this.dataset.registrationId;
+            const label = this.parentElement.querySelector('.form-check-label');
             
             fetch(`/admin/registration/${registrationId}/toggle_payment`, {
                 method: 'POST',
@@ -104,14 +131,19 @@ document.addEventListener('DOMContentLoaded', function() {
             .then(data => {
                 if (data.error) {
                     alert(data.error);
-                    // 如果發生錯誤，恢復原來的狀態
                     this.checked = !this.checked;
+                } else {
+                    // 更新標籤文字和樣式
+                    if (this.checked) {
+                        label.innerHTML = '<span class="text-success">已繳費</span>';
+                    } else {
+                        label.innerHTML = '<span class="text-danger">未繳費</span>';
+                    }
                 }
             })
             .catch(error => {
                 console.error('Error:', error);
                 alert('更新繳費狀態時發生錯誤');
-                // 如果發生錯誤，恢復原來的狀態
                 this.checked = !this.checked;
             });
         });

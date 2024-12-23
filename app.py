@@ -82,23 +82,45 @@ def clean_custom_fields(custom_fields):
 # 路由
 @app.route('/')
 def index():
-    events = list(events_collection.find().sort('start_date', 1))
+    # 獲取所有活動並按日期排序
+    events = list(events_collection.find().sort('start_date', -1))
+    
+    # 對每個活動添加報名人數統計
     for event in events:
-        # 獲取報名人數
-        event['registrations'] = list(registrations_collection.find({'event_id': event['_id']}))
+        event['registration_count'] = registrations_collection.count_documents({'event_id': event['_id']})
+        # 計算已繳費金額
+        paid_registrations = registrations_collection.find({
+            'event_id': event['_id'],
+            'has_paid': True
+        })
+        event['paid_amount'] = sum(1 for _ in paid_registrations) * event.get('fee', 0)
+        # 計算總金額
+        event['total_amount'] = event['registration_count'] * event.get('fee', 0)
+    
     return render_template('index.html', events=events)
 
 @app.route('/event/<event_id>')
 def event_detail(event_id):
     try:
+        # 使用 ObjectId 來查詢活動
         event = events_collection.find_one({'_id': ObjectId(event_id)})
         if not event:
             flash('活動不存在')
             return redirect(url_for('index'))
         
+        # 獲取報名資料
         registrations = list(registrations_collection.find({'event_id': ObjectId(event_id)}))
+        event['registration_count'] = len(registrations)
+        
+        # 計算已繳費人數和金額
+        paid_count = sum(1 for reg in registrations if reg.get('has_paid', False))
+        event['paid_count'] = paid_count
+        event['paid_amount'] = paid_count * event.get('fee', 0)
+        event['total_amount'] = len(registrations) * event.get('fee', 0)
+        
         return render_template('event_detail.html', event=event, registrations=registrations)
     except Exception as e:
+        print(f"Error in event_detail: {str(e)}")
         flash('無效的活動 ID')
         return redirect(url_for('index'))
 
@@ -161,7 +183,7 @@ def register(event_id):
                 'phone': request.form['phone'],
                 'email': request.form['email'],
                 'timestamp': datetime.now(),
-                'has_paid': False,  # 新增繳費狀態欄位
+                'has_paid': False,
                 'custom_fields': {}
             }
 
@@ -174,15 +196,16 @@ def register(event_id):
                     registration_data['custom_fields'][field_name] = request.form.get(field_name)
 
             if event.get('notes_label'):
-                registration_data['notes'] = request.form.get('notes')
+                registration_data['notes'] = request.form.get('notes', '')
 
             try:
                 registrations_collection.insert_one(registration_data)
                 flash('報名成功！')
-                return redirect(url_for('index'))
+                return redirect(url_for('event_detail', event_id=event_id))
             except Exception as e:
                 print(f"Error saving registration: {str(e)}")
                 flash('報名時發生錯誤，請稍後再試')
+                return render_template('register.html', event=event)
 
         return render_template('register.html', event=event)
     except Exception as e:
@@ -459,6 +482,14 @@ def view_event(event_id):
         
         # 獲取報名資料
         registrations = list(registrations_collection.find({'event_id': ObjectId(event_id)}))
+        
+        # 計算統計資料
+        paid_count = sum(1 for reg in registrations if reg.get('has_paid', False))
+        event['registration_count'] = len(registrations)
+        event['paid_count'] = paid_count
+        event['paid_amount'] = paid_count * event.get('fee', 0)
+        event['total_amount'] = len(registrations) * event.get('fee', 0)
+        
         return render_template('view_event.html', event=event, registrations=registrations)
     except Exception as e:
         print(f"Error in view_event: {str(e)}")
