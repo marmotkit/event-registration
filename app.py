@@ -20,6 +20,14 @@ events_collection = db.events
 users_collection = db.users
 registrations_collection = db.registrations
 
+# 防止快取
+@app.after_request
+def add_header(response):
+    response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, post-check=0, pre-check=0, max-age=0'
+    response.headers['Pragma'] = 'no-cache'
+    response.headers['Expires'] = '-1'
+    return response
+
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'login'
