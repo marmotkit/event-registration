@@ -210,31 +210,43 @@ def new_event():
 @login_required
 def edit_event(event_id):
     if not current_user.is_admin:
-        flash('無權限訪問此頁面')
+        flash('您沒有權限訪問此頁面')
         return redirect(url_for('index'))
-
-    event = events_collection.find_one({'_id': ObjectId(event_id)})
-    if not event:
-        flash('活動不存在')
-        return redirect(url_for('admin'))
-
-    if request.method == 'POST':
-        event_data = {
-            'title': request.form['title'],
-            'description': request.form['description'],
-            'date': request.form['date'],
-            'location': request.form['location'],
-            'custom_fields': request.form.getlist('custom_fields'),
-            'created_at': event['created_at']
-        }
-        events_collection.update_one(
-            {'_id': ObjectId(event_id)},
-            {'$set': event_data}
-        )
-        flash('活動更新成功！')
-        return redirect(url_for('admin'))
     
-    return render_template('admin/event_form.html', event=event)
+    try:
+        event = events_collection.find_one({'_id': ObjectId(event_id)})
+        if not event:
+            flash('活動不存在')
+            return redirect(url_for('admin'))
+
+        if request.method == 'POST':
+            # 獲取表單數據
+            title = request.form.get('title')
+            description = request.form.get('description')
+            date = request.form.get('date')
+            location = request.form.get('location')
+            custom_fields = request.form.get('custom_fields', '').strip().split('\n')
+            custom_fields = [field.strip() for field in custom_fields if field.strip()]
+
+            # 更新活動
+            events_collection.update_one(
+                {'_id': ObjectId(event_id)},
+                {'$set': {
+                    'title': title,
+                    'description': description,
+                    'date': date,
+                    'location': location,
+                    'custom_fields': custom_fields
+                }}
+            )
+            flash('活動已更新')
+            return redirect(url_for('admin'))
+
+        return render_template('edit_event.html', event=event)
+    except Exception as e:
+        print(f"Error editing event: {str(e)}")
+        flash('編輯活動時發生錯誤')
+        return redirect(url_for('admin'))
 
 @app.route('/admin/event/<event_id>/delete', methods=['POST'])
 @login_required
