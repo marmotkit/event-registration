@@ -1,6 +1,7 @@
 from flask import Flask, render_template, request, redirect, url_for, flash
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from datetime import datetime
+import pytz
 from pymongo import MongoClient
 from bson.objectid import ObjectId
 import os
@@ -80,7 +81,7 @@ def register(event_id):
                 'name': request.form['name'],
                 'email': request.form['email'],
                 'phone': request.form['phone'],
-                'registration_time': datetime.utcnow()
+                'registration_time': datetime.now(pytz.timezone('Asia/Taipei'))
             }
             
             # 處理自定義欄位
@@ -155,7 +156,7 @@ def new_event():
             'date': request.form['date'],
             'location': request.form['location'],
             'custom_fields': request.form.getlist('custom_fields'),
-            'created_at': datetime.now().isoformat()
+            'created_at': datetime.now(pytz.timezone('Asia/Taipei')).isoformat()
         }
         result = events_collection.insert_one(event_data)
         flash('活動建立成功！')
