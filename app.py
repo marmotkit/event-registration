@@ -68,6 +68,13 @@ def register(event_id):
             return redirect(url_for('index'))
 
         if request.method == 'POST':
+            # 驗證必填欄位
+            required_fields = ['name', 'email', 'phone']
+            for field in required_fields:
+                if not request.form.get(field):
+                    flash(f'請填寫{field}欄位')
+                    return render_template('register.html', event=event)
+
             registration_data = {
                 'event_id': ObjectId(event_id),
                 'name': request.form['name'],
@@ -77,16 +84,24 @@ def register(event_id):
             }
             
             # 處理自定義欄位
+            custom_fields = {}
             if event.get('custom_fields'):
                 for field in event['custom_fields']:
-                    registration_data[field] = request.form.get(field, '')
+                    custom_fields[field] = request.form.get(field, '')
+            registration_data['custom_fields'] = custom_fields
             
-            registrations_collection.insert_one(registration_data)
-            flash('報名成功！')
-            return redirect(url_for('event_detail', event_id=event_id))
+            try:
+                registrations_collection.insert_one(registration_data)
+                flash('報名成功！')
+                return redirect(url_for('event_detail', event_id=event_id))
+            except Exception as e:
+                print(f"Error saving registration: {str(e)}")
+                flash('報名時發生錯誤，請稍後再試')
+                return render_template('register.html', event=event)
         
         return render_template('register.html', event=event)
     except Exception as e:
+        print(f"Error in registration process: {str(e)}")
         flash('無效的活動 ID')
         return redirect(url_for('index'))
 

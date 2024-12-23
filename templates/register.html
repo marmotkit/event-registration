@@ -7,7 +7,7 @@
         
         <div class="mb-4">
             <h5>活動資訊：</h5>
-            <p><i class="fas fa-calendar-alt"></i> 時間：{{ event.date.strftime('%Y-%m-%d %H:%M') }}</p>
+            <p><i class="fas fa-calendar-alt"></i> 時間：{{ event.date }}</p>
             <p><i class="fas fa-map-marker-alt"></i> 地點：{{ event.location }}</p>
             <p>{{ event.description }}</p>
         </div>
@@ -50,8 +50,8 @@
                 <button type="submit" class="btn btn-primary">
                     <i class="fas fa-paper-plane"></i> 送出報名
                 </button>
-                <a href="{{ url_for('event_detail', event_id=event.id) }}" class="btn btn-outline-secondary">
-                    <i class="fas fa-arrow-left"></i> 返回活動頁面
+                <a href="{{ url_for('event_detail', event_id=event._id) }}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left"></i> 返回活動詳情
                 </a>
             </div>
         </form>
