@@ -187,14 +187,22 @@ def delete_event(event_id):
 
 # 創建管理員帳號
 def create_admin():
-    admin = users_collection.find_one({'username': 'admin'})
-    if not admin:
-        users_collection.insert_one({
-            'username': 'admin',
-            'password': 'admin123',  # 請更改為安全的密碼
-            'is_admin': True
-        })
-        print("Admin account created!")
+    try:
+        admin = users_collection.find_one({'username': 'admin'})
+        if not admin:
+            result = users_collection.insert_one({
+                'username': 'admin',
+                'password': 'admin123',  # 請更改為安全的密碼
+                'is_admin': True
+            })
+            print("Admin account created successfully!")
+            return True
+        else:
+            print("Admin account already exists!")
+            return True
+    except Exception as e:
+        print(f"Error creating admin account: {str(e)}")
+        return False
 
 if __name__ == '__main__':
     # 創建管理員帳號
@@ -202,4 +210,6 @@ if __name__ == '__main__':
     app.run(debug=True)
 else:
     # 在 production 環境中也創建管理員帳號
-    create_admin()
+    success = create_admin()
+    if not success:
+        print("Failed to create admin account!")
