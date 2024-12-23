@@ -66,8 +66,20 @@
                 <tfoot>
                     <tr class="table-info">
                         <td colspan="5" class="text-end"><strong>總計：</strong></td>
-                        <td><strong>{{ events|sum(attribute='registrations')|length }}</strong></td>
-                        <td><strong>{{ events|sum(attribute='fee', multiply_by='registrations|length') }}</strong></td>
+                        <td><strong>
+                            {% set total_registrations = 0 %}
+                            {% for event in events %}
+                                {% set total_registrations = total_registrations + event.registrations|length %}
+                            {% endfor %}
+                            {{ total_registrations }}
+                        </strong></td>
+                        <td><strong>
+                            {% set total_fee = 0 %}
+                            {% for event in events %}
+                                {% set total_fee = total_fee + (event.fee * event.registrations|length) %}
+                            {% endfor %}
+                            {{ total_fee }}
+                        </strong></td>
                         <td></td>
                     </tr>
                 </tfoot>
