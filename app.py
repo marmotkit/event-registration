@@ -185,12 +185,19 @@ def delete_event(event_id):
         flash('無權限訪問此頁面')
         return redirect(url_for('index'))
 
-    # 刪除活動
-    events_collection.delete_one({'_id': ObjectId(event_id)})
-    # 刪除相關的報名記錄
-    registrations_collection.delete_many({'event_id': ObjectId(event_id)})
+    try:
+        # 刪除活動
+        result = events_collection.delete_one({'_id': ObjectId(event_id)})
+        if result.deleted_count > 0:
+            # 刪除相關的報名記錄
+            registrations_collection.delete_many({'event_id': ObjectId(event_id)})
+            flash('活動已成功刪除')
+        else:
+            flash('找不到要刪除的活動')
+    except Exception as e:
+        flash('刪除活動時發生錯誤')
+        print(f"Error deleting event: {str(e)}")
     
-    flash('活動已刪除')
     return redirect(url_for('admin'))
 
 # 創建管理員帳號

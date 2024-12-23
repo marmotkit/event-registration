@@ -60,19 +60,27 @@
 {% block scripts %}
 <script>
 document.querySelectorAll('.delete-event').forEach(button => {
-    button.addEventListener('click', function() {
+    button.addEventListener('click', async function() {
         if (confirm('確定要刪除此活動嗎？此操作無法復原。')) {
             const eventId = this.dataset.eventId;
-            fetch(`/admin/event/${eventId}/delete`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                }
-            }).then(response => {
+            try {
+                const response = await fetch(`/admin/event/${eventId}/delete`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                });
+                
                 if (response.ok) {
+                    // 重新載入頁面以顯示更新後的活動列表
                     window.location.reload();
+                } else {
+                    alert('刪除活動時發生錯誤，請稍後再試。');
                 }
-            });
+            } catch (error) {
+                console.error('Error:', error);
+                alert('刪除活動時發生錯誤，請稍後再試。');
+            }
         }
     });
 });
