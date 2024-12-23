@@ -63,6 +63,22 @@ def load_user(user_id):
     user_data = users_collection.find_one({'_id': ObjectId(user_id)})
     return User(user_data) if user_data else None
 
+# 清理自定義欄位，移除與預設欄位重複的欄位
+def clean_custom_fields(custom_fields):
+    if not custom_fields:
+        return []
+    
+    # 預設欄位名稱
+    reserved_fields = ['姓名', '電話', '電子郵件', 'email', 'phone', 'name']
+    
+    # 過濾掉預設欄位
+    cleaned_fields = [
+        field for field in custom_fields 
+        if field.get('name', '').lower() not in [f.lower() for f in reserved_fields]
+    ]
+    
+    return cleaned_fields
+
 # 路由
 @app.route('/')
 def index():
@@ -123,6 +139,9 @@ def register(event_id):
             flash('活動不存在')
             return redirect(url_for('index'))
 
+        # 清理自定義欄位
+        event['custom_fields'] = clean_custom_fields(event.get('custom_fields', []))
+        
         if request.method == 'POST':
             # 驗證必填欄位
             required_fields = ['name', 'email', 'phone']
@@ -190,10 +209,10 @@ def admin():
         flash('無權限訪問此頁面')
         return redirect(url_for('index'))
     
-    events = list(events_collection.find().sort('start_date', 1))
+    events = list(events_collection.find().sort('start_date', -1))
+    # 清理每個活動的自定義欄位
     for event in events:
-        # 獲取報名人數
-        event['registrations'] = list(registrations_collection.find({'event_id': event['_id']}))
+        event['custom_fields'] = clean_custom_fields(event.get('custom_fields', []))
         # 確保每個活動都有 fee 欄位
         if 'fee' not in event:
             event['fee'] = 0
@@ -288,22 +307,20 @@ def edit_event(event_id):
             field_types = request.form.getlist('field_types[]')
             field_options = request.form.getlist('field_options[]')
             
-            # 預設欄位名稱，這些欄位不能被重複添加
-            reserved_fields = ['姓名', '電話', '電子郵件', 'email', 'phone', 'name']
-            
             custom_fields = []
             for i in range(len(field_names)):
                 if field_names[i]:  # 只處理有名稱的欄位
                     field_name = field_names[i].strip()
-                    # 檢查是否是預設欄位
-                    if field_name.lower() not in [f.lower() for f in reserved_fields]:
-                        field = {
-                            'name': field_name,
-                            'type': field_types[i],
-                        }
-                        if field_types[i] in ['radio', 'checkbox'] and field_options[i]:
-                            field['options'] = [opt.strip() for opt in field_options[i].split(',')]
-                        custom_fields.append(field)
+                    field = {
+                        'name': field_name,
+                        'type': field_types[i],
+                    }
+                    if field_types[i] in ['radio', 'checkbox'] and field_options[i]:
+                        field['options'] = [opt.strip() for opt in field_options[i].split(',')]
+                    custom_fields.append(field)
+
+            # 清理自定義欄位
+            custom_fields = clean_custom_fields(custom_fields)
 
             # 處理協辦人員
             co_organizers = [line.strip() for line in request.form['co_organizers'].split('\n') if line.strip()]
@@ -345,7 +362,9 @@ def edit_event(event_id):
             except Exception as e:
                 print(f"Error updating event: {str(e)}")
                 flash('更新活動時發生錯誤，請稍後再試')
-        
+
+        # 清理自定義欄位
+        event['custom_fields'] = clean_custom_fields(event.get('custom_fields', []))
         return render_template('event_form.html', event=event, is_new=False)
     except Exception as e:
         print(f"Error in edit_event: {str(e)}")
