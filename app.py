@@ -11,19 +11,37 @@ import gridfs
 import io
 
 # 載入環境變數
-load_dotenv()
+if os.path.exists('.env.local'):
+    load_dotenv('.env.local')
+else:
+    load_dotenv()
+
+# 調試輸出
+print("MongoDB URI:", os.getenv('MONGODB_URI'))
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'your-secret-key')
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 限制上傳檔案大小為 16MB
 
 # 設定 MongoDB
-client = MongoClient(os.getenv('MONGODB_URI'))
-db = client.event_registration
-events_collection = db.events
-users_collection = db.users
-registrations_collection = db.registrations
-fs = gridfs.GridFS(db)  # 用於存儲檔案
+try:
+    mongodb_uri = os.getenv('MONGODB_URI')
+    if not mongodb_uri:
+        raise ValueError("MongoDB URI is not set in environment variables")
+    
+    client = MongoClient(mongodb_uri)
+    # 測試連接
+    client.admin.command('ping')
+    print("Successfully connected to MongoDB!")
+    
+    db = client.get_database()
+    events_collection = db.events
+    users_collection = db.users
+    registrations_collection = db.registrations
+    fs = gridfs.GridFS(db)  # 用於存儲檔案
+except Exception as e:
+    print(f"Error connecting to MongoDB: {str(e)}")
+    raise
 
 # 允許的檔案類型
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx'}
@@ -108,55 +126,42 @@ def index():
 @app.route('/event/<event_id>')
 def event_detail(event_id):
     try:
-        # 使用 ObjectId 來查詢活動
         event = events_collection.find_one({'_id': ObjectId(event_id)})
         if not event:
-            flash('活動不存在')
+            flash('找不到活動', 'error')
             return redirect(url_for('index'))
         
-        # 獲取報名資料
         registrations = list(registrations_collection.find({'event_id': ObjectId(event_id)}))
-        event['registration_count'] = len(registrations)
-        
-        # 計算已繳費人數和金額
-        paid_count = sum(1 for reg in registrations if reg.get('has_paid', False))
-        event['paid_count'] = paid_count
-        event['paid_amount'] = paid_count * event.get('fee', 0)
-        event['total_amount'] = event['registration_count'] * event.get('fee', 0)
-        
         return render_template('event_detail.html', event=event, registrations=registrations)
     except Exception as e:
-        print(f"Error in event_detail: {str(e)}")
-        flash('無效的活動 ID')
+        app.logger.error(f"Error in event_detail: {str(e)}")
+        flash('系統錯誤', 'error')
         return redirect(url_for('index'))
 
-@app.route('/event/<event_id>/registration/<registration_id>/cancel', methods=['POST'])
+@app.route('/event/<event_id>/cancel_registration/<registration_id>', methods=['POST'])
 def cancel_registration(event_id, registration_id):
     try:
         # 檢查活動是否存在
         event = events_collection.find_one({'_id': ObjectId(event_id)})
         if not event:
-            flash('活動不存在')
+            flash('找不到活動', 'error')
             return redirect(url_for('index'))
-        
-        # 檢查報名記錄是否存在
-        registration = registrations_collection.find_one({
+            
+        # 刪除報名記錄
+        result = registrations_collection.delete_one({
             '_id': ObjectId(registration_id),
             'event_id': ObjectId(event_id)
         })
         
-        if not registration:
-            flash('報名記錄不存在')
-            return redirect(url_for('event_detail', event_id=event_id))
-        
-        # 刪除報名記錄
-        registrations_collection.delete_one({'_id': ObjectId(registration_id)})
-        flash('已取消報名')
-        
+        if result.deleted_count > 0:
+            flash('已取消報名', 'success')
+        else:
+            flash('找不到報名記錄', 'error')
+            
         return redirect(url_for('event_detail', event_id=event_id))
     except Exception as e:
-        print(f"Error canceling registration: {str(e)}")
-        flash('取消報名時發生錯誤')
+        app.logger.error(f"Error in cancel_registration: {str(e)}")
+        flash('系統錯誤', 'error')
         return redirect(url_for('event_detail', event_id=event_id))
 
 @app.route('/register/<event_id>', methods=['GET', 'POST'])
@@ -222,17 +227,42 @@ def register(event_id):
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
-        username = request.form['username']
-        password = request.form['password']
-        
-        user_data = users_collection.find_one({'username': username})
-        
-        if user_data and user_data['password'] == password:
-            user = User(user_data)
-            login_user(user)
-            return redirect(url_for('admin' if user.is_admin else 'index'))
-        
-        flash('帳號或密碼錯誤')
+        try:
+            username = request.form['username']
+            password = request.form['password']
+            
+            print(f"Attempting to login with username: {username}")
+            
+            # 確保資料庫連接
+            try:
+                # 測試資料庫連接
+                client.admin.command('ping')
+                print("Database connection is alive")
+            except Exception as e:
+                print(f"Database connection error: {str(e)}")
+                flash('資料庫連接錯誤，請稍後再試')
+                return render_template('login.html')
+            
+            # 查詢使用者
+            try:
+                user_data = users_collection.find_one({'username': username})
+                print(f"User found: {user_data is not None}")
+            except Exception as e:
+                print(f"Error querying user: {str(e)}")
+                flash('查詢使用者時發生錯誤')
+                return render_template('login.html')
+            
+            if user_data and user_data['password'] == password:
+                user = User(user_data)
+                login_user(user)
+                print(f"User {username} logged in successfully")
+                return redirect(url_for('admin' if user.is_admin else 'index'))
+            
+            flash('帳號或密碼錯誤')
+        except Exception as e:
+            print(f"Login error: {str(e)}")
+            flash('登入時發生錯誤，請稍後再試')
+    
     return render_template('login.html')
 
 @app.route('/logout')
@@ -599,7 +629,7 @@ def create_admin():
 if __name__ == '__main__':
     # 創建管理員帳號
     create_admin()
-    app.run(debug=True)
+    app.run(debug=True, use_reloader=False)
 else:
     # 在 production 環境中也創建管理員帳號
     success = create_admin()
