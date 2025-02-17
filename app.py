@@ -518,20 +518,18 @@ def view_event(event_id):
             flash('活動不存在')
             return redirect(url_for('admin'))
 
-        # 清理自定義欄位
-        event['custom_fields'] = clean_custom_fields(event.get('custom_fields', []))
-        
         # 獲取報名資料
         registrations = list(registrations_collection.find({'event_id': ObjectId(event_id)}))
-        
-        # 計算統計資料
-        paid_count = sum(1 for reg in registrations if reg.get('has_paid', False))
+        event['registrations'] = registrations
         event['registration_count'] = len(registrations)
+        
+        # 計算已繳費人數和金額
+        paid_count = sum(1 for reg in registrations if reg.get('has_paid', False))
         event['paid_count'] = paid_count
         event['paid_amount'] = paid_count * event.get('fee', 0)
-        event['total_amount'] = len(registrations) * event.get('fee', 0)
+        event['total_amount'] = event['registration_count'] * event.get('fee', 0)
         
-        return render_template('view_event.html', event=event, registrations=registrations)
+        return render_template('view_event.html', event=event)
     except Exception as e:
         print(f"Error in view_event: {str(e)}")
         flash('無效的活動 ID')

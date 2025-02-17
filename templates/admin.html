@@ -42,15 +42,14 @@
                     <td>NT$ {{ event.total_amount }}</td>
                     <td>
                         <div class="btn-group">
-                            <a href="{{ url_for('view_event', event_id=event._id) }}" class="btn btn-info btn-sm">
+                            <a href="{{ url_for('event_detail', event_id=event._id) }}" class="btn btn-info btn-sm">
                                 <i class="fas fa-eye"></i> 查看
                             </a>
                             <a href="{{ url_for('edit_event', event_id=event._id) }}" class="btn btn-warning btn-sm">
                                 <i class="fas fa-edit"></i> 編輯
                             </a>
                             <button type="button" class="btn btn-danger btn-sm" 
-                                    onclick="if(confirm('確定要刪除此活動嗎？此操作無法復原。')) 
-                                            document.getElementById('delete-form-{{ event._id }}').submit();">
+                                    onclick="deleteEvent('{{ event._id }}')">
                                 <i class="fas fa-trash"></i> 刪除
                             </button>
                         </div>
@@ -61,11 +60,12 @@
         </table>
     </div>
 
-    {% for event in events %}
-    {% if event.registrations and event.registrations|length > 0 %}
+    <!-- 選中活動的報名名單 -->
+    {% set selected_event = events|selectattr("_id", "equalto", event_id)|first %}
+    {% if selected_event and selected_event.registrations %}
     <div class="card mt-4">
         <div class="card-header">
-            <h5 class="mb-0">{{ event.title }} - 報名名單</h5>
+            <h5 class="mb-0">{{ selected_event.title }} - 報名名單</h5>
         </div>
         <div class="card-body">
             <div class="table-responsive">
@@ -82,7 +82,7 @@
                         </tr>
                     </thead>
                     <tbody>
-                        {% for registration in event.registrations %}
+                        {% for registration in selected_event.registrations %}
                         <tr>
                             <td>{{ registration.name }}</td>
                             <td>{{ registration.phone }}</td>
@@ -107,7 +107,6 @@
         </div>
     </div>
     {% endif %}
-    {% endfor %}
     {% else %}
     <div class="alert alert-info">
         目前沒有任何活動。
