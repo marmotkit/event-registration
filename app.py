@@ -167,15 +167,9 @@ def register(event_id):
             flash('活動不存在')
             return redirect(url_for('index'))
 
-        # 清理自定義欄位
-        event['custom_fields'] = clean_custom_fields(event.get('custom_fields', []))
-        
         if request.method == 'POST':
             # 驗證必填欄位
-            required_fields = ['name', 'email', 'phone']
-            for field in event.get('custom_fields', []):
-                if field.get('required', True) and field['name'] != event.get('notes_label', '備註'):
-                    required_fields.append(field['name'])
+            required_fields = ['name']  # 只有姓名是必填
             
             for field in required_fields:
                 if not request.form.get(field):
@@ -186,23 +180,13 @@ def register(event_id):
             registration_data = {
                 'event_id': ObjectId(event_id),
                 'name': request.form['name'],
-                'phone': request.form['phone'],
-                'email': request.form['email'],
-                'timestamp': datetime.now(),
-                'has_paid': False,
-                'custom_fields': {}
+                'phone': request.form.get('phone', ''),  # 使用 get 方法，如果沒有填寫則返回空字串
+                'email': request.form.get('email', ''),  # 同上
+                'participants': request.form.get('participants', ''),  # 同上
+                'preferred_date': request.form.get('preferred_date', ''),  # 同上
+                'register_time': datetime.now(),
+                'has_paid': False
             }
-
-            # 處理自定義欄位的值
-            for field in event.get('custom_fields', []):
-                field_name = field['name']
-                if field['type'] == 'checkbox':
-                    registration_data['custom_fields'][field_name] = request.form.getlist(f"{field_name}[]")
-                else:
-                    registration_data['custom_fields'][field_name] = request.form.get(field_name)
-
-            if event.get('notes_label'):
-                registration_data['notes'] = request.form.get('notes', '')
 
             try:
                 registrations_collection.insert_one(registration_data)
