@@ -240,6 +240,7 @@ def admin():
         for event in events:
             # 獲取報名資料
             registrations = list(registrations_collection.find({'event_id': event['_id']}))
+            event['registrations'] = registrations
             event['registration_count'] = len(registrations)
             
             # 計算已繳費人數和金額
@@ -247,6 +248,11 @@ def admin():
             event['paid_count'] = paid_count
             event['paid_amount'] = paid_count * event.get('fee', 0)
             event['total_amount'] = event['registration_count'] * event.get('fee', 0)
+            
+            # 修改報名時間格式
+            for reg in registrations:
+                if 'register_time' in reg:
+                    reg['timestamp'] = reg['register_time']
         
         return render_template('admin.html', events=events)
     except Exception as e:

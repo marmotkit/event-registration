@@ -111,7 +111,7 @@
                             {% if event.notes_label %}
                             <td>{{ registration.notes }}</td>
                             {% endif %}
-                            <td>{{ registration.timestamp.strftime('%Y-%m-%d %H:%M') }}</td>
+                            <td>{{ registration.timestamp if registration.timestamp is string else registration.timestamp.strftime('%Y-%m-%d') }}</td>
                             <td class="text-center">
                                 <div class="form-check form-switch d-flex justify-content-center align-items-center">
                                     <input class="form-check-input payment-status" type="checkbox" 
