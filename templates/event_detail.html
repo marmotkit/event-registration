@@ -116,7 +116,8 @@
                                         <button type="button" 
                                                 class="btn btn-danger btn-sm" 
                                                 data-bs-toggle="modal" 
-                                                data-bs-target="#cancelModal{{ registration.id }}">
+                                                data-bs-target="#cancelModal{{ registration.id }}"
+                                                data-name="{{ registration.name }}">
                                             <i class="fas fa-times"></i> 取消報名
                                         </button>
                                     </td>
@@ -144,7 +145,11 @@
                         <div class="modal-footer">
                             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">關閉</button>
                             <form action="{{ url_for('cancel_registration', event_id=event._id, registration_id=registration._id) }}" method="POST" style="display: inline;">
-                                <button type="submit" class="btn btn-danger">確認取消</button>
+                                <button type="submit" 
+                                        class="btn btn-danger btn-cancel-registration" 
+                                        data-name="{{ registration.name }}">
+                                    確認取消
+                                </button>
                             </form>
                         </div>
                     </div>
@@ -179,7 +184,11 @@
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">關閉</button>
                 <form action="{{ url_for('cancel_registration', event_id=event._id, registration_id=registration._id) }}" method="POST" style="display: inline;">
-                    <button type="submit" class="btn btn-danger">確認取消</button>
+                    <button type="submit" 
+                            class="btn btn-danger btn-cancel-registration" 
+                            data-name="{{ registration.name }}">
+                        確認取消
+                    </button>
                 </form>
             </div>
         </div>
@@ -190,10 +199,24 @@
 
 {% block scripts %}
 <script>
-document.querySelector('.share-line').addEventListener('click', function() {
-    const url = this.dataset.url;
-    const lineUrl = `https://social-plugins.line.me/lineit/share?url=${encodeURIComponent(url)}`;
-    window.open(lineUrl, '_blank', 'width=600,height=500');
+// 只在存在 share-line 元素時才添加事件監聽器
+const shareLineBtn = document.querySelector('.share-line');
+if (shareLineBtn) {
+    shareLineBtn.addEventListener('click', function() {
+        const url = this.dataset.url;
+        const lineUrl = `https://social-plugins.line.me/lineit/share?url=${encodeURIComponent(url)}`;
+        window.open(lineUrl, '_blank', 'width=600,height=500');
+    });
+}
+
+// 添加取消報名的確認機制
+document.querySelectorAll('.btn-cancel-registration').forEach(button => {
+    button.addEventListener('click', function(e) {
+        const name = this.dataset.name;
+        if (!confirm(`確定要取消 ${name} 的報名嗎？此操作無法復原。`)) {
+            e.preventDefault();
+        }
+    });
 });
 </script>
 {% endblock %}
