@@ -9,6 +9,7 @@
         </a>
     </div>
 
+    {% if events %}
     <div class="table-responsive">
         <table class="table">
             <thead>
@@ -36,34 +37,37 @@
                     </td>
                     <td>{{ event.meeting_time }}</td>
                     <td>{{ event.location }}</td>
-                    <td>{{ event.fee }}</td>
+                    <td>NT$ {{ event.fee }}</td>
                     <td>{{ event.registration_count }}</td>
-                    <td>NT$ {{ event.registration_count * event.fee }}</td>
+                    <td>NT$ {{ event.total_amount }}</td>
                     <td>
                         <div class="btn-group">
-                            <a href="{{ url_for('view_event', event_id=event._id) }}" class="btn btn-info btn-sm">
+                            <a href="{{ url_for('event_detail', event_id=event._id) }}" class="btn btn-info btn-sm">
                                 <i class="fas fa-eye"></i> 查看
                             </a>
                             <a href="{{ url_for('edit_event', event_id=event._id) }}" class="btn btn-warning btn-sm">
                                 <i class="fas fa-edit"></i> 編輯
                             </a>
-                            <button onclick="deleteEvent('{{ event._id }}')" class="btn btn-danger btn-sm">
+                            <button type="button" class="btn btn-danger btn-sm" 
+                                    onclick="if(confirm('確定要刪除此活動嗎？此操作無法復原。')) 
+                                            document.getElementById('delete-form-{{ event._id }}').submit();">
                                 <i class="fas fa-trash"></i> 刪除
                             </button>
+                            <form id="delete-form-{{ event._id }}" 
+                                  action="{{ url_for('delete_event', event_id=event._id) }}" 
+                                  method="POST" style="display: none;"></form>
                         </div>
                     </td>
                 </tr>
                 {% endfor %}
             </tbody>
-            <tfoot>
-                <tr class="table-info">
-                    <td colspan="5" class="text-end"><strong>總計：</strong></td>
-                    <td><strong>{{ events|sum(attribute='registration_count') }}</strong></td>
-                    <td colspan="2"><strong>NT$ {{ events|sum(attribute='total_amount') }}</strong></td>
-                </tr>
-            </tfoot>
         </table>
     </div>
+    {% else %}
+    <div class="alert alert-info">
+        目前沒有任何活動。
+    </div>
+    {% endif %}
 
     {% for event in events %}
     {% if event.registration_count > 0 %}
