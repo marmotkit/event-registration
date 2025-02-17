@@ -143,7 +143,7 @@
                         </div>
                         <div class="modal-footer">
                             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">關閉</button>
-                            <form action="{{ url_for('cancel_registration', registration_id=registration.id) }}" method="POST" style="display: inline;">
+                            <form action="{{ url_for('cancel_registration', event_id=event._id, registration_id=registration.id) }}" method="POST" style="display: inline;">
                                 <button type="submit" class="btn btn-danger">確認取消</button>
                             </form>
                         </div>
@@ -163,6 +163,29 @@
         </div>
     </div>
 </div>
+
+<!-- 取消報名確認對話框 -->
+{% for registration in registrations %}
+<div class="modal fade" id="cancelModal{{ registration.id }}" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">確認取消報名</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>確定要取消 {{ registration.name }} 的報名嗎？</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">關閉</button>
+                <form action="{{ url_for('cancel_registration', event_id=event._id, registration_id=registration.id) }}" method="POST" style="display: inline;">
+                    <button type="submit" class="btn btn-danger">確認取消</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endfor %}
 {% endblock %}
 
 {% block scripts %}
