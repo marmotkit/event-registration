@@ -130,7 +130,7 @@ def event_detail(event_id):
         flash('無效的活動 ID')
         return redirect(url_for('index'))
 
-@app.route('/event/<event_id>/registration/<registration_id>/cancel', methods=['POST'])
+@app.route('/event/<event_id>/cancel_registration/<registration_id>', methods=['POST'])
 def cancel_registration(event_id, registration_id):
     try:
         # 檢查活動是否存在
