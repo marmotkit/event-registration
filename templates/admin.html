@@ -42,7 +42,7 @@
                     <td>NT$ {{ event.total_amount }}</td>
                     <td>
                         <div class="btn-group">
-                            <a href="{{ url_for('event_detail', event_id=event._id) }}" class="btn btn-info btn-sm">
+                            <a href="{{ url_for('view_event', event_id=event._id) }}" class="btn btn-info btn-sm">
                                 <i class="fas fa-eye"></i> 查看
                             </a>
                             <a href="{{ url_for('edit_event', event_id=event._id) }}" class="btn btn-warning btn-sm">
@@ -53,9 +53,6 @@
                                             document.getElementById('delete-form-{{ event._id }}').submit();">
                                 <i class="fas fa-trash"></i> 刪除
                             </button>
-                            <form id="delete-form-{{ event._id }}" 
-                                  action="{{ url_for('delete_event', event_id=event._id) }}" 
-                                  method="POST" style="display: none;"></form>
                         </div>
                     </td>
                 </tr>
@@ -63,14 +60,9 @@
             </tbody>
         </table>
     </div>
-    {% else %}
-    <div class="alert alert-info">
-        目前沒有任何活動。
-    </div>
-    {% endif %}
 
     {% for event in events %}
-    {% if event.registration_count > 0 %}
+    {% if event.registrations and event.registrations|length > 0 %}
     <div class="card mt-4">
         <div class="card-header">
             <h5 class="mb-0">{{ event.title }} - 報名名單</h5>
@@ -83,14 +75,10 @@
                             <th>姓名</th>
                             <th>電話</th>
                             <th>電子郵件</th>
-                            {% for field in event.custom_fields %}
-                            <th>{{ field.name }}</th>
-                            {% endfor %}
-                            {% if event.notes_label %}
-                            <th>{{ event.notes_label }}</th>
-                            {% endif %}
+                            <th>參與人數</th>
+                            <th>2/5 或 2/6 看大家最適合的日子</th>
                             <th>報名時間</th>
-                            <th class="text-center">繳費狀態</th>
+                            <th>繳費狀態</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -99,19 +87,9 @@
                             <td>{{ registration.name }}</td>
                             <td>{{ registration.phone }}</td>
                             <td>{{ registration.email }}</td>
-                            {% for field in event.custom_fields %}
-                            <td>
-                                {% if field.type == 'checkbox' %}
-                                    {{ ', '.join(registration.custom_fields.get(field.name, [])) }}
-                                {% else %}
-                                    {{ registration.custom_fields.get(field.name, '') }}
-                                {% endif %}
-                            </td>
-                            {% endfor %}
-                            {% if event.notes_label %}
-                            <td>{{ registration.notes }}</td>
-                            {% endif %}
-                            <td>{{ registration.timestamp if registration.timestamp is string else registration.timestamp.strftime('%Y-%m-%d') }}</td>
+                            <td>{{ registration.participants }}</td>
+                            <td>{{ registration.preferred_date }}</td>
+                            <td>{{ registration.register_time }}</td>
                             <td class="text-center">
                                 <div class="form-check form-switch d-flex justify-content-center align-items-center">
                                     <input class="form-check-input payment-status" type="checkbox" 
@@ -119,13 +97,6 @@
                                            data-registration-id="{{ registration._id }}"
                                            {% if registration.has_paid %}checked{% endif %}
                                            style="width: 3em; height: 1.5em;">
-                                    <label class="form-check-label ms-2" for="payment_{{ registration._id }}">
-                                        {% if registration.has_paid %}
-                                        <span class="text-success">已繳費</span>
-                                        {% else %}
-                                        <span class="text-danger">未繳費</span>
-                                        {% endif %}
-                                    </label>
                                 </div>
                             </td>
                         </tr>
@@ -137,6 +108,11 @@
     </div>
     {% endif %}
     {% endfor %}
+    {% else %}
+    <div class="alert alert-info">
+        目前沒有任何活動。
+    </div>
+    {% endif %}
 </div>
 {% endblock %}
 
