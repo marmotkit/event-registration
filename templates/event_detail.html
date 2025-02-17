@@ -97,13 +97,10 @@
                                     <th>姓名</th>
                                     <th>電話</th>
                                     <th>電子郵件</th>
-                                    {% for field in event.custom_fields %}
-                                    <th>{{ field.name }}</th>
-                                    {% endfor %}
-                                    {% if event.notes_label %}
-                                    <th>{{ event.notes_label }}</th>
-                                    {% endif %}
+                                    <th>參與人數</th>
+                                    <th>2/5 或 2/6 看大家最適合的日子</th>
                                     <th>報名時間</th>
+                                    <th>操作</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -112,19 +109,17 @@
                                     <td>{{ registration.name }}</td>
                                     <td>{{ registration.phone }}</td>
                                     <td>{{ registration.email }}</td>
-                                    {% for field in event.custom_fields %}
+                                    <td>{{ registration.participants }}</td>
+                                    <td>{{ registration.preferred_date }}</td>
+                                    <td>{{ registration.register_time }}</td>
                                     <td>
-                                        {% if field.type == 'checkbox' %}
-                                            {{ ', '.join(registration.custom_fields.get(field.name, [])) }}
-                                        {% else %}
-                                            {{ registration.custom_fields.get(field.name, '') }}
-                                        {% endif %}
+                                        <button type="button" 
+                                                class="btn btn-danger btn-sm" 
+                                                data-bs-toggle="modal" 
+                                                data-bs-target="#cancelModal{{ registration.id }}">
+                                            <i class="fas fa-times"></i> 取消報名
+                                        </button>
                                     </td>
-                                    {% endfor %}
-                                    {% if event.notes_label %}
-                                    <td>{{ registration.notes }}</td>
-                                    {% endif %}
-                                    <td>{{ registration.timestamp.strftime('%Y-%m-%d %H:%M') }}</td>
                                 </tr>
                                 {% endfor %}
                             </tbody>
@@ -133,6 +128,29 @@
                 </div>
             </div>
             {% endif %}
+
+            <!-- 取消報名確認對話框 -->
+            {% for registration in registrations %}
+            <div class="modal fade" id="cancelModal{{ registration.id }}" tabindex="-1" aria-hidden="true">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">確認取消報名</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            <p>確定要取消 {{ registration.name }} 的報名嗎？</p>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">關閉</button>
+                            <form action="{{ url_for('cancel_registration', registration_id=registration.id) }}" method="POST" style="display: inline;">
+                                <button type="submit" class="btn btn-danger">確認取消</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
 
             <div class="text-center">
                 <a href="{{ url_for('register', event_id=event._id) }}" class="btn btn-primary btn-lg">

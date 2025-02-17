@@ -28,16 +28,16 @@
 
         <form method="POST">
             <div class="mb-3">
-                <label for="name" class="form-label">姓名</label>
+                <label for="name" class="form-label">姓名 <span class="text-danger">*</span></label>
                 <input type="text" class="form-control" id="name" name="name" required>
             </div>
             <div class="mb-3">
-                <label for="phone" class="form-label">電話</label>
-                <input type="tel" class="form-control" id="phone" name="phone" required>
+                <label for="phone" class="form-label">電話 <small class="text-muted">(選填)</small></label>
+                <input type="tel" class="form-control" id="phone" name="phone">
             </div>
             <div class="mb-3">
-                <label for="email" class="form-label">電子郵件</label>
-                <input type="email" class="form-control" id="email" name="email" required>
+                <label for="email" class="form-label">電子郵件 <small class="text-muted">(選填)</small></label>
+                <input type="email" class="form-control" id="email" name="email">
             </div>
 
             {% if event.custom_fields %}
