@@ -27,7 +27,11 @@
             <tbody>
                 {% for event in events %}
                 <tr>
-                    <td>{{ event.title }}</td>
+                    <td>
+                        <a href="#" class="event-link" data-event-id="{{ event._id }}">
+                            {{ event.title }}
+                        </a>
+                    </td>
                     <td>
                         {% if event.start_date == event.end_date %}
                             {{ event.start_date }}
@@ -60,53 +64,9 @@
         </table>
     </div>
 
-    <!-- 選中活動的報名名單 -->
-    {% set selected_event = events|selectattr("_id", "equalto", event_id)|first %}
-    {% if selected_event and selected_event.registrations %}
-    <div class="card mt-4">
-        <div class="card-header">
-            <h5 class="mb-0">{{ selected_event.title }} - 報名名單</h5>
-        </div>
-        <div class="card-body">
-            <div class="table-responsive">
-                <table class="table">
-                    <thead>
-                        <tr>
-                            <th>姓名</th>
-                            <th>電話</th>
-                            <th>電子郵件</th>
-                            <th>參與人數</th>
-                            <th>2/5 或 2/6 看大家最適合的日子</th>
-                            <th>報名時間</th>
-                            <th>繳費狀態</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for registration in selected_event.registrations %}
-                        <tr>
-                            <td>{{ registration.name }}</td>
-                            <td>{{ registration.phone }}</td>
-                            <td>{{ registration.email }}</td>
-                            <td>{{ registration.participants }}</td>
-                            <td>{{ registration.preferred_date }}</td>
-                            <td>{{ registration.register_time }}</td>
-                            <td class="text-center">
-                                <div class="form-check form-switch d-flex justify-content-center align-items-center">
-                                    <input class="form-check-input payment-status" type="checkbox" 
-                                           id="payment_{{ registration._id }}"
-                                           data-registration-id="{{ registration._id }}"
-                                           {% if registration.has_paid %}checked{% endif %}
-                                           style="width: 3em; height: 1.5em;">
-                                </div>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-    {% endif %}
+    <!-- 報名名單區域 -->
+    <div id="registration-list" class="mt-4"></div>
+
     {% else %}
     <div class="alert alert-info">
         目前沒有任何活動。
@@ -135,6 +95,32 @@ function deleteEvent(eventId) {
 }
 
 document.addEventListener('DOMContentLoaded', function() {
+    // 處理活動點擊事件
+    document.querySelectorAll('.event-link').forEach(link => {
+        link.addEventListener('click', function(e) {
+            e.preventDefault();
+            const eventId = this.dataset.eventId;
+            
+            // 移除其他活動的選中狀態
+            document.querySelectorAll('.event-link').forEach(l => 
+                l.parentElement.parentElement.classList.remove('table-active'));
+            
+            // 添加當前活動的選中狀態
+            this.parentElement.parentElement.classList.add('table-active');
+            
+            // 載入報名名單
+            fetch(`/admin/event/${eventId}/registrations`)
+                .then(response => response.text())
+                .then(html => {
+                    document.getElementById('registration-list').innerHTML = html;
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('載入報名名單時發生錯誤');
+                });
+        });
+    });
+    
     // 處理繳費狀態的切換
     document.querySelectorAll('.payment-status').forEach(checkbox => {
         checkbox.addEventListener('change', function() {

@@ -561,6 +561,25 @@ def toggle_payment(registration_id):
         print(f"Error toggling payment status: {str(e)}")
         return jsonify({'error': '更新繳費狀態時發生錯誤'}), 500
 
+@app.route('/admin/event/<event_id>/registrations')
+@login_required
+def get_event_registrations(event_id):
+    if not current_user.is_admin:
+        return jsonify({'error': '您沒有權限訪問此頁面'}), 403
+    
+    try:
+        event = events_collection.find_one({'_id': ObjectId(event_id)})
+        if not event:
+            return jsonify({'error': '活動不存在'}), 404
+
+        # 獲取報名資料
+        registrations = list(registrations_collection.find({'event_id': ObjectId(event_id)}))
+        
+        return render_template('_registration_list.html', event=event, registrations=registrations)
+    except Exception as e:
+        print(f"Error in get_event_registrations: {str(e)}")
+        return jsonify({'error': '載入報名名單時發生錯誤'}), 500
+
 # 創建管理員帳號
 def create_admin():
     try:
