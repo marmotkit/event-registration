@@ -104,6 +104,7 @@
                                     <th>{{ event.notes_label }}</th>
                                     {% endif %}
                                     <th>報名時間</th>
+                                    <th>操作</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -125,6 +126,14 @@
                                     <td>{{ registration.notes }}</td>
                                     {% endif %}
                                     <td>{{ registration.timestamp.strftime('%Y-%m-%d %H:%M') }}</td>
+                                    <td>
+                                        <button type="button" 
+                                                class="btn btn-danger btn-sm" 
+                                                data-bs-toggle="modal" 
+                                                data-bs-target="#cancelModal{{ registration.id }}">
+                                            <i class="fas fa-times"></i> 取消報名
+                                        </button>
+                                    </td>
                                 </tr>
                                 {% endfor %}
                             </tbody>
@@ -145,6 +154,29 @@
         </div>
     </div>
 </div>
+
+<!-- 取消報名確認對話框 -->
+{% for registration in registrations %}
+<div class="modal fade" id="cancelModal{{ registration.id }}" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">確認取消報名</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>確定要取消 {{ registration.name }} 的報名嗎？</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">關閉</button>
+                <form action="{{ url_for('cancel_registration', registration_id=registration.id) }}" method="POST" style="display: inline;">
+                    <button type="submit" class="btn btn-danger">確認取消</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endfor %}
 {% endblock %}
 
 {% block scripts %}
