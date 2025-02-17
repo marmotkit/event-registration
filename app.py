@@ -180,11 +180,11 @@ def register(event_id):
             registration_data = {
                 'event_id': ObjectId(event_id),
                 'name': request.form['name'],
-                'phone': request.form.get('phone', ''),  # 使用 get 方法，如果沒有填寫則返回空字串
-                'email': request.form.get('email', ''),  # 同上
-                'participants': request.form.get('participants', ''),  # 同上
-                'preferred_date': request.form.get('preferred_date', ''),  # 同上
-                'register_time': datetime.now(),
+                'phone': request.form.get('phone', ''),
+                'email': request.form.get('email', ''),
+                'participants': request.form.get('participants', ''),
+                'preferred_date': request.form.get('preferred_date', ''),
+                'register_time': datetime.now().strftime('%Y-%m-%d'),  # 只保留日期
                 'has_paid': False
             }
 
