@@ -108,25 +108,25 @@ def index():
 @app.route('/event/<event_id>')
 def event_detail(event_id):
     try:
-        # 先嘗試直接查詢
-        event = events_collection.find_one({'_id': event_id})
-        
-        # 如果找不到，再嘗試使用 ObjectId
-        if not event:
-            try:
-                event = events_collection.find_one({'_id': ObjectId(event_id)})
-            except:
-                flash('活動不存在')
-                return redirect(url_for('index'))
+        # 先嘗試使用 ObjectId 查詢
+        try:
+            event = events_collection.find_one({'_id': ObjectId(event_id)})
+        except:
+            # 如果 ObjectId 轉換失敗，直接返回首頁
+            flash('無效的活動 ID')
+            return redirect(url_for('index'))
         
         if not event:
             flash('活動不存在')
             return redirect(url_for('index'))
         
         # 獲取報名資料
-        registrations = list(registrations_collection.find({
-            'event_id': event['_id'] if isinstance(event['_id'], ObjectId) else ObjectId(event['_id'])
-        }))
+        try:
+            registrations = list(registrations_collection.find({
+                'event_id': ObjectId(event_id)
+            }))
+        except:
+            registrations = []
         
         # 確保每個報名記錄都有 register_time
         for reg in registrations:
@@ -144,7 +144,7 @@ def event_detail(event_id):
         return render_template('event_detail.html', event=event, registrations=registrations)
     except Exception as e:
         print(f"Error in event_detail: {str(e)}")
-        flash('無效的活動 ID')
+        flash('系統錯誤')
         return redirect(url_for('index'))
 
 @app.route('/event/<event_id>/cancel_registration/<registration_id>', methods=['POST'])
