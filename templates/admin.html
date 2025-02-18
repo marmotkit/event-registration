@@ -49,9 +49,11 @@
                             <a href="{{ url_for('event_detail', event_id=event._id) }}" class="btn btn-info btn-sm">
                                 <i class="fas fa-eye"></i> 查看
                             </a>
+                            {% if not event.is_locked or current_user.user_data.can_hide_events %}
                             <a href="{{ url_for('edit_event', event_id=event._id) }}" class="btn btn-warning btn-sm">
                                 <i class="fas fa-edit"></i> 編輯
                             </a>
+                            {% endif %}
                             {% if current_user.user_data.can_hide_events %}
                             <button type="button" class="btn btn-secondary btn-sm toggle-visibility" 
                                     data-event-id="{{ event._id }}"
@@ -59,11 +61,19 @@
                                 <i class="fas {% if event.is_hidden %}fa-eye-slash{% else %}fa-eye{% endif %}"></i>
                                 {{ '顯示' if event.is_hidden else '隱藏' }}
                             </button>
+                            <button type="button" class="btn btn-secondary btn-sm toggle-lock" 
+                                    data-event-id="{{ event._id }}"
+                                    data-is-locked="{{ 'true' if event.is_locked else 'false' }}">
+                                <i class="fas {% if event.is_locked %}fa-lock{% else %}fa-unlock{% endif %}"></i>
+                                {{ '解鎖' if event.is_locked else '鎖定' }}
+                            </button>
                             {% endif %}
+                            {% if not event.is_locked or current_user.user_data.can_hide_events %}
                             <button type="button" class="btn btn-danger btn-sm" 
                                     onclick="deleteEvent('{{ event._id }}')">
                                 <i class="fas fa-trash"></i> 刪除
                             </button>
+                            {% endif %}
                         </div>
                     </td>
                 </tr>
@@ -185,6 +195,37 @@ document.addEventListener('DOMContentLoaded', function() {
                     icon.classList.toggle('fa-eye');
                     icon.classList.toggle('fa-eye-slash');
                     this.textContent = data.is_hidden ? ' 顯示' : ' 隱藏';
+                    // 重新載入頁面以更新列表
+                    window.location.reload();
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('更新活動狀態時發生錯誤');
+            });
+        });
+    });
+
+    // 處理鎖定/解鎖按鈕點擊
+    document.querySelectorAll('.toggle-lock').forEach(button => {
+        button.addEventListener('click', function() {
+            const eventId = this.dataset.eventId;
+            const isLocked = this.dataset.isLocked === 'true';
+            
+            fetch(`/admin/event/${eventId}/toggle_lock`, {
+                method: 'POST',
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    alert(data.error);
+                } else {
+                    // 更新按鈕狀態
+                    this.dataset.isLocked = data.is_locked;
+                    const icon = this.querySelector('i');
+                    icon.classList.toggle('fa-lock');
+                    icon.classList.toggle('fa-unlock');
+                    this.textContent = data.is_locked ? ' 解鎖' : ' 鎖定';
                     // 重新載入頁面以更新列表
                     window.location.reload();
                 }

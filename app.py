@@ -336,7 +336,8 @@ def new_event():
             'custom_fields': custom_fields,
             'notes_label': request.form.get('notes_label', ''),
             'reference_files': [],
-            'is_hidden': False
+            'is_hidden': False,
+            'is_locked': False  # 新增活動預設為未鎖定
         }
 
         # 處理檔案上傳
@@ -372,6 +373,11 @@ def edit_event(event_id):
         event = events_collection.find_one({'_id': ObjectId(event_id)})
         if not event:
             flash('活動不存在')
+            return redirect(url_for('admin'))
+        
+        # 檢查活動是否被鎖定
+        if event.get('is_locked', False) and not current_user.user_data.get('can_hide_events', False):
+            flash('此活動已被鎖定，無法修改')
             return redirect(url_for('admin'))
         
         if request.method == 'POST':
@@ -719,6 +725,33 @@ def toggle_event_visibility(event_id):
         })
     except Exception as e:
         print(f"Error toggling event visibility: {str(e)}")
+        return jsonify({'error': '更新活動狀態時發生錯誤'}), 500
+
+# 添加活動鎖定的路由
+@app.route('/admin/event/<event_id>/toggle_lock', methods=['POST'])
+@login_required
+def toggle_event_lock(event_id):
+    if not current_user.user_data.get('can_hide_events', False):  # 使用相同的權限檢查
+        return jsonify({'error': '您沒有權限執行此操作'}), 403
+    
+    try:
+        event = events_collection.find_one({'_id': ObjectId(event_id)})
+        if not event:
+            return jsonify({'error': '活動不存在'}), 404
+
+        # 切換鎖定狀態
+        new_status = not event.get('is_locked', False)
+        events_collection.update_one(
+            {'_id': ObjectId(event_id)},
+            {'$set': {'is_locked': new_status}}
+        )
+        
+        return jsonify({
+            'success': True,
+            'is_locked': new_status
+        })
+    except Exception as e:
+        print(f"Error toggling event lock: {str(e)}")
         return jsonify({'error': '更新活動狀態時發生錯誤'}), 500
 
 if __name__ == '__main__':
