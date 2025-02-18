@@ -182,12 +182,12 @@
 
             <!-- 修改報名 Modal -->
             {% for registration in registrations %}
-            <div class="modal fade" id="editModal{{ registration._id }}" tabindex="-1" aria-hidden="true">
+            <div class="modal fade" id="editModal{{ registration._id }}" tabindex="-1">
                 <div class="modal-dialog">
                     <div class="modal-content">
                         <div class="modal-header">
                             <h5 class="modal-title">修改報名資料</h5>
-                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                         </div>
                         <form action="{{ url_for('edit_registration', event_id=event._id, registration_id=registration._id) }}" method="POST">
                             <div class="modal-body">
@@ -211,7 +211,29 @@
                                 {% for field in event.custom_fields %}
                                 <div class="mb-3">
                                     <label for="{{ field.name }}{{ registration._id }}" class="form-label">{{ field.name }}</label>
-                                    <input type="text" class="form-control" id="{{ field.name }}{{ registration._id }}" name="custom_fields[{{ field.name }}]" value="{{ registration.custom_fields.get(field.name, '') }}">
+                                    {% if field.type == 'radio' %}
+                                    <div>
+                                        {% for option in field.options %}
+                                        <div class="form-check">
+                                            <input type="radio" 
+                                                   class="form-check-input" 
+                                                   name="custom_fields[{{ field.name }}]" 
+                                                   id="{{ field.name }}_{{ option }}_{{ registration._id }}"
+                                                   value="{{ option }}"
+                                                   {% if registration.custom_fields.get(field.name) == option %}checked{% endif %}>
+                                            <label class="form-check-label" for="{{ field.name }}_{{ option }}_{{ registration._id }}">
+                                                {{ option }}
+                                            </label>
+                                        </div>
+                                        {% endfor %}
+                                    </div>
+                                    {% else %}
+                                    <input type="text" 
+                                           class="form-control" 
+                                           id="{{ field.name }}{{ registration._id }}" 
+                                           name="custom_fields[{{ field.name }}]"
+                                           value="{{ registration.custom_fields.get(field.name, '') }}">
+                                    {% endif %}
                                 </div>
                                 {% endfor %}
                                 {% endif %}

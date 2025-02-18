@@ -671,9 +671,15 @@ def edit_registration(event_id, registration_id):
             'name': request.form['name'],
             'phone': request.form.get('phone', ''),
             'email': request.form.get('email', ''),
-            'participants': request.form.get('participants', ''),
-            'preferred_date': request.form.get('preferred_date', '')
+            'participants': request.form.get('participants', '1'),
+            'custom_fields': {}
         }
+        
+        # 處理自訂欄位
+        for field in event.get('custom_fields', []):
+            field_name = field['name']
+            field_value = request.form.get(f'custom_fields[{field_name}]', '')
+            updated_data['custom_fields'][field_name] = field_value
         
         registrations_collection.update_one(
             {'_id': ObjectId(registration_id)},
