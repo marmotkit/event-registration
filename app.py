@@ -108,14 +108,26 @@ def index():
 @app.route('/event/<event_id>')
 def event_detail(event_id):
     try:
-        # 使用 ObjectId 來查詢活動
-        event = events_collection.find_one({'_id': ObjectId(event_id)})
+        # 先嘗試直接查詢
+        event = events_collection.find_one({'_id': event_id})
+        
+        # 如果找不到，再嘗試使用 ObjectId
+        if not event:
+            try:
+                event = events_collection.find_one({'_id': ObjectId(event_id)})
+            except:
+                flash('活動不存在')
+                return redirect(url_for('index'))
+        
         if not event:
             flash('活動不存在')
             return redirect(url_for('index'))
         
         # 獲取報名資料
-        registrations = list(registrations_collection.find({'event_id': ObjectId(event_id)}))
+        registrations = list(registrations_collection.find({
+            'event_id': event['_id'] if isinstance(event['_id'], ObjectId) else ObjectId(event['_id'])
+        }))
+        
         event['registration_count'] = len(registrations)
         
         # 計算已繳費人數和金額
