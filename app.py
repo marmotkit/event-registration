@@ -123,6 +123,14 @@ def event_detail(event_id):
             flash('活動不存在')
             return redirect(url_for('index'))
         
+        # 檢查活動是否被鎖定且用戶未登入或非管理員
+        if event.get('is_locked', False) and (
+            not current_user.is_authenticated or 
+            not getattr(current_user, 'user_data', {}).get('can_hide_events', False)
+        ):
+            flash('此活動已被鎖定')
+            return redirect(url_for('index'))
+        
         # 確保 event 有 custom_fields 屬性
         if 'custom_fields' not in event:
             event['custom_fields'] = []
@@ -164,6 +172,11 @@ def cancel_registration(event_id, registration_id):
         if not event:
             flash('活動不存在')
             return redirect(url_for('index'))
+        
+        # 檢查活動是否被鎖定
+        if event.get('is_locked', False) and not current_user.user_data.get('can_hide_events', False):
+            flash('此活動已被鎖定，無法修改')
+            return redirect(url_for('event_detail', event_id=event_id))
         
         # 檢查報名記錄是否存在
         registration = registrations_collection.find_one({
@@ -637,6 +650,11 @@ def edit_registration(event_id, registration_id):
         if not event:
             flash('活動不存在')
             return redirect(url_for('index'))
+        
+        # 檢查活動是否被鎖定
+        if event.get('is_locked', False) and not current_user.user_data.get('can_hide_events', False):
+            flash('此活動已被鎖定，無法修改')
+            return redirect(url_for('event_detail', event_id=event_id))
         
         # 檢查報名記錄是否存在
         registration = registrations_collection.find_one({

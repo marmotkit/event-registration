@@ -75,7 +75,9 @@
                             <i class="fas fa-user"></i> 
                             {{ current_user.username }}
                             {% if current_user.user_data.can_hide_events %}
-                            <span class="badge bg-warning text-dark">管理者</span>
+                            <span class="badge bg-warning text-dark">總管理者</span>
+                            {% elif current_user.is_admin %}
+                            <span class="badge bg-info text-dark">一般管理者</span>
                             {% endif %}
                         </span>
                     </li>
@@ -85,6 +87,12 @@
                         </a>
                     </li>
                     {% else %}
+                    <li class="nav-item">
+                        <span class="nav-link text-light">
+                            <i class="fas fa-user"></i> 
+                            一般使用者
+                        </span>
+                    </li>
                     <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('login') }}">
                             <i class="fas fa-sign-in-alt"></i> 登入
