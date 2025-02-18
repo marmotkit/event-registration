@@ -594,8 +594,19 @@ def get_event_registrations(event_id):
         if not event:
             return jsonify({'error': '活動不存在'}), 404
 
+        # 確保 event 有 custom_fields 屬性
+        if 'custom_fields' not in event:
+            event['custom_fields'] = []
+
         # 獲取報名資料
         registrations = list(registrations_collection.find({'event_id': ObjectId(event_id)}))
+        
+        # 確保每個報名記錄都有必要的屬性
+        for reg in registrations:
+            if 'register_time' not in reg:
+                reg['register_time'] = '未記錄'
+            if 'custom_fields' not in reg:
+                reg['custom_fields'] = {}
         
         return render_template('_registration_list.html', event=event, registrations=registrations)
     except Exception as e:
