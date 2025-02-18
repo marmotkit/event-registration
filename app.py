@@ -128,6 +128,11 @@ def event_detail(event_id):
             'event_id': event['_id'] if isinstance(event['_id'], ObjectId) else ObjectId(event['_id'])
         }))
         
+        # 確保每個報名記錄都有 register_time
+        for reg in registrations:
+            if 'register_time' not in reg:
+                reg['register_time'] = '未記錄'
+        
         event['registration_count'] = len(registrations)
         
         # 計算已繳費人數和金額

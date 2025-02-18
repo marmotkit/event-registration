@@ -111,7 +111,7 @@
                                     <td>{{ registration.email }}</td>
                                     <td>{{ registration.participants }}</td>
                                     <td>{{ registration.preferred_date }}</td>
-                                    <td>{{ registration.register_time.strftime('%Y-%m-%d') if registration.register_time is not string else registration.register_time }}</td>
+                                    <td>{{ registration.register_time if registration.register_time else '未記錄' }}</td>
                                     <td>
                                         <button type="button" 
                                                 class="btn btn-danger btn-sm" 
