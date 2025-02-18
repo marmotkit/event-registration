@@ -98,7 +98,11 @@
                                     <th>電話</th>
                                     <th>電子郵件</th>
                                     <th>參與人數</th>
-                                    <th>2/5 或 2/6 看大家最適合的日子</th>
+                                    {% if event.custom_fields %}
+                                    {% for field in event.custom_fields %}
+                                    <th>{{ field.name }}</th>
+                                    {% endfor %}
+                                    {% endif %}
                                     <th>報名時間</th>
                                     <th>操作</th>
                                 </tr>
@@ -110,7 +114,11 @@
                                     <td>{{ registration.phone }}</td>
                                     <td>{{ registration.email }}</td>
                                     <td>{{ registration.participants }}</td>
-                                    <td>{{ registration.preferred_date }}</td>
+                                    {% if event.custom_fields %}
+                                    {% for field in event.custom_fields %}
+                                    <td>{{ registration.custom_fields.get(field.name, '') }}</td>
+                                    {% endfor %}
+                                    {% endif %}
                                     <td>{{ registration.register_time if registration.register_time else '未記錄' }}</td>
                                     <td>
                                         <div class="btn-group">
@@ -188,10 +196,14 @@
                                     <label for="participants{{ registration._id }}" class="form-label">參與人數</label>
                                     <input type="text" class="form-control" id="participants{{ registration._id }}" name="participants" value="{{ registration.participants }}">
                                 </div>
+                                {% if event.custom_fields %}
+                                {% for field in event.custom_fields %}
                                 <div class="mb-3">
-                                    <label for="preferred_date{{ registration._id }}" class="form-label">2/5 或 2/6 看大家最適合的日子</label>
-                                    <input type="text" class="form-control" id="preferred_date{{ registration._id }}" name="preferred_date" value="{{ registration.preferred_date }}">
+                                    <label for="{{ field.name }}{{ registration._id }}" class="form-label">{{ field.name }}</label>
+                                    <input type="text" class="form-control" id="{{ field.name }}{{ registration._id }}" name="custom_fields[{{ field.name }}]" value="{{ registration.custom_fields.get(field.name, '') }}">
                                 </div>
+                                {% endfor %}
+                                {% endif %}
                             </div>
                             <div class="modal-footer">
                                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
