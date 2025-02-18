@@ -137,9 +137,14 @@
                                                 <i class="fas fa-times"></i> 取消報名
                                             </button>
                                             {% else %}
-                                            <button type="button" class="btn btn-secondary btn-sm" disabled>
-                                                <i class="fas fa-lock"></i> 已鎖定
-                                            </button>
+                                            <div class="btn-group">
+                                                <button type="button" class="btn btn-warning btn-sm" disabled>
+                                                    <i class="fas fa-edit"></i> 修改
+                                                </button>
+                                                <button type="button" class="btn btn-danger btn-sm" disabled>
+                                                    <i class="fas fa-times"></i> 取消報名
+                                                </button>
+                                            </div>
                                             {% endif %}
                                         </div>
                                     </td>
