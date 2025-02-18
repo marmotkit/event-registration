@@ -597,6 +597,47 @@ def get_event_registrations(event_id):
         print(f"Error in get_event_registrations: {str(e)}")
         return jsonify({'error': '載入報名名單時發生錯誤'}), 500
 
+@app.route('/event/<event_id>/edit_registration/<registration_id>', methods=['POST'])
+def edit_registration(event_id, registration_id):
+    try:
+        # 檢查活動是否存在
+        event = events_collection.find_one({'_id': ObjectId(event_id)})
+        if not event:
+            flash('活動不存在')
+            return redirect(url_for('index'))
+        
+        # 檢查報名記錄是否存在
+        registration = registrations_collection.find_one({
+            '_id': ObjectId(registration_id),
+            'event_id': ObjectId(event_id)
+        })
+        
+        if not registration:
+            flash('報名記錄不存在')
+            return redirect(url_for('event_detail', event_id=event_id))
+        
+        # 更新報名資料
+        updated_data = {
+            'name': request.form['name'],
+            'phone': request.form.get('phone', ''),
+            'email': request.form.get('email', ''),
+            'participants': request.form.get('participants', ''),
+            'preferred_date': request.form.get('preferred_date', '')
+        }
+        
+        registrations_collection.update_one(
+            {'_id': ObjectId(registration_id)},
+            {'$set': updated_data}
+        )
+        
+        flash('報名資料已更新')
+        return redirect(url_for('event_detail', event_id=event_id))
+        
+    except Exception as e:
+        print(f"Error editing registration: {str(e)}")
+        flash('修改報名資料時發生錯誤')
+        return redirect(url_for('event_detail', event_id=event_id))
+
 # 創建管理員帳號
 def create_admin():
     try:

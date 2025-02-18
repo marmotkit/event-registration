@@ -113,13 +113,21 @@
                                     <td>{{ registration.preferred_date }}</td>
                                     <td>{{ registration.register_time if registration.register_time else '未記錄' }}</td>
                                     <td>
-                                        <button type="button" 
-                                                class="btn btn-danger btn-sm" 
-                                                data-bs-toggle="modal" 
-                                                data-bs-target="#cancelModal{{ registration._id }}"
-                                                data-name="{{ registration.name }}">
-                                            <i class="fas fa-times"></i> 取消報名
-                                        </button>
+                                        <div class="btn-group">
+                                            <button type="button" 
+                                                    class="btn btn-warning btn-sm" 
+                                                    data-bs-toggle="modal" 
+                                                    data-bs-target="#editModal{{ registration._id }}">
+                                                <i class="fas fa-edit"></i> 修改
+                                            </button>
+                                            <button type="button" 
+                                                    class="btn btn-danger btn-sm" 
+                                                    data-bs-toggle="modal" 
+                                                    data-bs-target="#cancelModal{{ registration._id }}"
+                                                    data-name="{{ registration.name }}">
+                                                <i class="fas fa-times"></i> 取消報名
+                                            </button>
+                                        </div>
                                     </td>
                                 </tr>
                                 {% endfor %}
@@ -148,6 +156,48 @@
                                 <button type="submit" class="btn btn-danger">確認取消</button>
                             </form>
                         </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+
+            <!-- 修改報名 Modal -->
+            {% for registration in registrations %}
+            <div class="modal fade" id="editModal{{ registration._id }}" tabindex="-1" aria-hidden="true">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">修改報名資料</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <form action="{{ url_for('edit_registration', event_id=event._id, registration_id=registration._id) }}" method="POST">
+                            <div class="modal-body">
+                                <div class="mb-3">
+                                    <label for="name{{ registration._id }}" class="form-label">姓名 <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" id="name{{ registration._id }}" name="name" value="{{ registration.name }}" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="phone{{ registration._id }}" class="form-label">電話 <small class="text-muted">(選填)</small></label>
+                                    <input type="tel" class="form-control" id="phone{{ registration._id }}" name="phone" value="{{ registration.phone }}">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="email{{ registration._id }}" class="form-label">電子郵件 <small class="text-muted">(選填)</small></label>
+                                    <input type="email" class="form-control" id="email{{ registration._id }}" name="email" value="{{ registration.email }}">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="participants{{ registration._id }}" class="form-label">參與人數</label>
+                                    <input type="text" class="form-control" id="participants{{ registration._id }}" name="participants" value="{{ registration.participants }}">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="preferred_date{{ registration._id }}" class="form-label">2/5 或 2/6 看大家最適合的日子</label>
+                                    <input type="text" class="form-control" id="preferred_date{{ registration._id }}" name="preferred_date" value="{{ registration.preferred_date }}">
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                                <button type="submit" class="btn btn-primary">儲存修改</button>
+                            </div>
+                        </form>
                     </div>
                 </div>
             </div>
