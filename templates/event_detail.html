@@ -122,6 +122,7 @@
                                     <td>{{ registration.register_time if registration.register_time else '未記錄' }}</td>
                                     <td>
                                         <div class="btn-group">
+                                            {% if not event.is_locked or current_user.user_data.can_hide_events %}
                                             <button type="button" 
                                                     class="btn btn-warning btn-sm" 
                                                     data-bs-toggle="modal" 
@@ -135,6 +136,11 @@
                                                     data-name="{{ registration.name }}">
                                                 <i class="fas fa-times"></i> 取消報名
                                             </button>
+                                            {% else %}
+                                            <button type="button" class="btn btn-secondary btn-sm" disabled>
+                                                <i class="fas fa-lock"></i> 已鎖定
+                                            </button>
+                                            {% endif %}
                                         </div>
                                     </td>
                                 </tr>
@@ -216,9 +222,15 @@
             {% endfor %}
 
             <div class="text-center">
+                {% if not event.is_locked or current_user.user_data.can_hide_events %}
                 <a href="{{ url_for('register', event_id=event._id) }}" class="btn btn-primary btn-lg">
                     <i class="fas fa-edit"></i> 我要報名
                 </a>
+                {% else %}
+                <button type="button" class="btn btn-secondary btn-lg" disabled>
+                    <i class="fas fa-lock"></i> 活動已鎖定
+                </button>
+                {% endif %}
                 <a href="{{ url_for('index') }}" class="btn btn-secondary btn-lg ms-2">
                     <i class="fas fa-arrow-left"></i> 返回首頁
                 </a>
@@ -228,23 +240,34 @@
 </div>
 
 <script>
-// 只在存在 share-line 元素時才添加事件監聽器
-const shareLineBtn = document.querySelector('.share-line');
-if (shareLineBtn) {
-    shareLineBtn.addEventListener('click', function() {
-        const url = this.dataset.url;
-        const lineUrl = `https://social-plugins.line.me/lineit/share?url=${encodeURIComponent(url)}`;
-        window.open(lineUrl, '_blank', 'width=600,height=500');
+document.addEventListener('DOMContentLoaded', function() {
+    {% if event.is_locked and not current_user.user_data.can_hide_events %}
+    // 如果活動被鎖定且用戶不是 KT，禁用所有操作按鈕
+    document.querySelectorAll('.btn-cancel-registration, .btn-edit-registration').forEach(button => {
+        button.disabled = true;
+        button.classList.remove('btn-warning', 'btn-danger');
+        button.classList.add('btn-secondary');
     });
-}
+    {% endif %}
 
-// 添加取消報名的確認機制
-document.querySelectorAll('.btn-cancel-registration').forEach(button => {
-    button.addEventListener('click', function(e) {
-        const name = this.dataset.name;
-        if (!confirm(`確定要取消 ${name} 的報名嗎？此操作無法復原。`)) {
-            e.preventDefault();
-        }
+    // 只在存在 share-line 元素時才添加事件監聽器
+    const shareLineBtn = document.querySelector('.share-line');
+    if (shareLineBtn) {
+        shareLineBtn.addEventListener('click', function() {
+            const url = this.dataset.url;
+            const lineUrl = `https://social-plugins.line.me/lineit/share?url=${encodeURIComponent(url)}`;
+            window.open(lineUrl, '_blank', 'width=600,height=500');
+        });
+    }
+
+    // 添加取消報名的確認機制
+    document.querySelectorAll('.btn-cancel-registration').forEach(button => {
+        button.addEventListener('click', function(e) {
+            const name = this.dataset.name;
+            if (!confirm(`確定要取消 ${name} 的報名嗎？此操作無法復原。`)) {
+                e.preventDefault();
+            }
+        });
     });
 });
 </script>
