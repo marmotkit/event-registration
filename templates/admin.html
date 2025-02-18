@@ -52,6 +52,14 @@
                             <a href="{{ url_for('edit_event', event_id=event._id) }}" class="btn btn-warning btn-sm">
                                 <i class="fas fa-edit"></i> 編輯
                             </a>
+                            {% if current_user.user_data.can_hide_events %}
+                            <button type="button" class="btn btn-secondary btn-sm toggle-visibility" 
+                                    data-event-id="{{ event._id }}"
+                                    data-is-hidden="{{ 'true' if event.is_hidden else 'false' }}">
+                                <i class="fas {% if event.is_hidden %}fa-eye-slash{% else %}fa-eye{% endif %}"></i>
+                                {{ '顯示' if event.is_hidden else '隱藏' }}
+                            </button>
+                            {% endif %}
                             <button type="button" class="btn btn-danger btn-sm" 
                                     onclick="deleteEvent('{{ event._id }}')">
                                 <i class="fas fa-trash"></i> 刪除
@@ -153,6 +161,37 @@ document.addEventListener('DOMContentLoaded', function() {
                 console.error('Error:', error);
                 alert('更新繳費狀態時發生錯誤');
                 this.checked = !this.checked;
+            });
+        });
+    });
+
+    // 處理隱藏/顯示按鈕點擊
+    document.querySelectorAll('.toggle-visibility').forEach(button => {
+        button.addEventListener('click', function() {
+            const eventId = this.dataset.eventId;
+            const isHidden = this.dataset.isHidden === 'true';
+            
+            fetch(`/admin/event/${eventId}/toggle_visibility`, {
+                method: 'POST',
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    alert(data.error);
+                } else {
+                    // 更新按鈕狀態
+                    this.dataset.isHidden = data.is_hidden;
+                    const icon = this.querySelector('i');
+                    icon.classList.toggle('fa-eye');
+                    icon.classList.toggle('fa-eye-slash');
+                    this.textContent = data.is_hidden ? ' 顯示' : ' 隱藏';
+                    // 重新載入頁面以更新列表
+                    window.location.reload();
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('更新活動狀態時發生錯誤');
             });
         });
     });

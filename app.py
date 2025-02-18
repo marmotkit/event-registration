@@ -84,8 +84,12 @@ def clean_custom_fields(custom_fields):
 @app.route('/')
 def index():
     try:
-        # 獲取所有活動並按日期排序
-        events = list(events_collection.find().sort('start_date', -1))
+        # 根據用戶權限過濾活動
+        query = {}
+        if not current_user.is_authenticated or not current_user.user_data.get('can_hide_events', False):
+            query['is_hidden'] = {'$ne': True}
+        
+        events = list(events_collection.find(query).sort('start_date', -1))
         
         # 對每個活動添加報名人數統計
         for event in events:
@@ -255,8 +259,12 @@ def admin():
         return redirect(url_for('index'))
     
     try:
-        # 獲取所有活動並按日期排序
-        events = list(events_collection.find().sort('start_date', -1))
+        # 根據用戶權限過濾活動
+        query = {}
+        if not current_user.user_data.get('can_hide_events', False):
+            query['is_hidden'] = {'$ne': True}
+        
+        events = list(events_collection.find(query).sort('start_date', -1))
         
         # 對每個活動添加報名和費用統計
         for event in events:
@@ -327,7 +335,8 @@ def new_event():
             'co_organizers': co_organizers,
             'custom_fields': custom_fields,
             'notes_label': request.form.get('notes_label', ''),
-            'reference_files': []
+            'reference_files': [],
+            'is_hidden': False
         }
 
         # 處理檔案上傳
@@ -401,7 +410,8 @@ def edit_event(event_id):
                 'co_organizers': co_organizers,
                 'custom_fields': custom_fields,
                 'notes_label': request.form.get('notes_label', ''),
-                'reference_files': event.get('reference_files', [])
+                'reference_files': event.get('reference_files', []),
+                'is_hidden': event.get('is_hidden', False)
             }
 
             # 處理檔案上傳
@@ -657,21 +667,59 @@ def edit_registration(event_id, registration_id):
 # 創建管理員帳號
 def create_admin():
     try:
+        # 創建 admin 賬號
         admin = users_collection.find_one({'username': 'admin'})
         if not admin:
-            result = users_collection.insert_one({
+            users_collection.insert_one({
                 'username': 'admin',
-                'password': 'admin123',  # 請更改為安全的密碼
-                'is_admin': True
+                'password': 'admin123',
+                'is_admin': True,
+                'can_hide_events': False  # 普通管理員不能隱藏活動
             })
             print("Admin account created successfully!")
-            return True
-        else:
-            print("Admin account already exists!")
-            return True
+        
+        # 創建 kt 賬號
+        kt = users_collection.find_one({'username': 'kt'})
+        if not kt:
+            users_collection.insert_one({
+                'username': 'kt',
+                'password': 'kingmax00',
+                'is_admin': True,
+                'can_hide_events': True  # kt 可以隱藏活動
+            })
+            print("KT account created successfully!")
+        
+        return True
     except Exception as e:
-        print(f"Error creating admin account: {str(e)}")
+        print(f"Error creating admin accounts: {str(e)}")
         return False
+
+# 添加隱藏活動的路由
+@app.route('/admin/event/<event_id>/toggle_visibility', methods=['POST'])
+@login_required
+def toggle_event_visibility(event_id):
+    if not current_user.user_data.get('can_hide_events', False):
+        return jsonify({'error': '您沒有權限執行此操作'}), 403
+    
+    try:
+        event = events_collection.find_one({'_id': ObjectId(event_id)})
+        if not event:
+            return jsonify({'error': '活動不存在'}), 404
+
+        # 切換隱藏狀態
+        new_status = not event.get('is_hidden', False)
+        events_collection.update_one(
+            {'_id': ObjectId(event_id)},
+            {'$set': {'is_hidden': new_status}}
+        )
+        
+        return jsonify({
+            'success': True,
+            'is_hidden': new_status
+        })
+    except Exception as e:
+        print(f"Error toggling event visibility: {str(e)}")
+        return jsonify({'error': '更新活動狀態時發生錯誤'}), 500
 
 if __name__ == '__main__':
     # 創建管理員帳號
