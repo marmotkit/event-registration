@@ -112,13 +112,16 @@ def event_detail(event_id):
         try:
             event = events_collection.find_one({'_id': ObjectId(event_id)})
         except:
-            # 如果 ObjectId 轉換失敗，直接返回首頁
             flash('無效的活動 ID')
             return redirect(url_for('index'))
         
         if not event:
             flash('活動不存在')
             return redirect(url_for('index'))
+        
+        # 確保 event 有 custom_fields 屬性
+        if 'custom_fields' not in event:
+            event['custom_fields'] = []
         
         # 獲取報名資料
         try:
@@ -128,10 +131,12 @@ def event_detail(event_id):
         except:
             registrations = []
         
-        # 確保每個報名記錄都有 register_time
+        # 確保每個報名記錄都有必要的屬性
         for reg in registrations:
             if 'register_time' not in reg:
                 reg['register_time'] = '未記錄'
+            if 'custom_fields' not in reg:
+                reg['custom_fields'] = {}
         
         event['registration_count'] = len(registrations)
         
