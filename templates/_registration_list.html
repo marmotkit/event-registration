@@ -41,6 +41,13 @@
                                        data-registration-id="{{ registration._id }}"
                                        {% if registration.has_paid %}checked{% endif %}
                                        style="width: 3em; height: 1.5em;">
+                                <label class="form-check-label ms-2" for="payment_{{ registration._id }}">
+                                    {% if registration.has_paid %}
+                                        <span class="text-success">已收款</span>
+                                    {% else %}
+                                        <span class="text-danger">未收款</span>
+                                    {% endif %}
+                                </label>
                             </div>
                         </td>
                     </tr>
