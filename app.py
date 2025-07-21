@@ -57,6 +57,7 @@ def format_registration_list_for_line(event, registrations):
     
     paid_count = sum(1 for reg in registrations if reg.get('has_paid', False))
     
+    # 限制訊息長度，避免超過 Line 的 5000 字元限制
     message = f"📋 {event['title']}\n"
     message += f"📅 活動日期：{event['start_date']}"
     if event['start_date'] != event['end_date']:
@@ -70,24 +71,41 @@ def format_registration_list_for_line(event, registrations):
     message += f"• 已繳費：{paid_count} 人\n"
     message += f"• 已收費用：NT$ {paid_count * event['fee']}\n\n"
     
-    message += "📝 報名名單：\n"
-    for i, reg in enumerate(registrations, 1):
-        message += f"{i}. {reg['name']}"
+    # 限制顯示的報名名單數量，避免訊息過長
+    max_display = 20  # 最多顯示 20 個報名者
+    display_registrations = registrations[:max_display]
+    
+    message += f"📝 報名名單（顯示前 {len(display_registrations)} 位）：\n"
+    for i, reg in enumerate(display_registrations, 1):
+        # 限制每個報名者的資訊長度
+        name = reg['name'][:20] if len(reg['name']) > 20 else reg['name']
+        line = f"{i}. {name}"
+        
         if reg.get('phone'):
-            message += f" ({reg['phone']})"
+            phone = reg['phone'][:15] if len(reg['phone']) > 15 else reg['phone']
+            line += f" ({phone})"
         
         # 安全處理參與人數
         participants = reg.get('participants', '1')
         if participants and participants.strip() and participants != '1':
             try:
                 int(participants)  # 驗證是否為有效數字
-                message += f" x{participants}人"
+                line += f" x{participants}人"
             except (ValueError, TypeError):
                 pass  # 如果不是有效數字，跳過顯示
         
         if reg.get('has_paid'):
-            message += " ✅已繳費"
-        message += f"\n"
+            line += " ✅已繳費"
+        
+        message += line + "\n"
+    
+    # 如果報名者超過顯示限制，添加提示
+    if len(registrations) > max_display:
+        message += f"\n... 還有 {len(registrations) - max_display} 位報名者"
+    
+    # 確保訊息不超過 Line 的限制
+    if len(message) > 4500:  # 留一些餘地
+        message = message[:4500] + "\n\n... (訊息已截斷)"
     
     return message
 
@@ -112,12 +130,24 @@ def send_registration_update_to_line(event_id):
         # 格式化訊息
         message = format_registration_list_for_line(event, registrations)
         
+        # 檢查訊息長度
+        if len(message) > 5000:
+            print(f"訊息過長 ({len(message)} 字元)，截斷至 4500 字元")
+            message = message[:4500] + "\n\n... (訊息已截斷)"
+        
+        print(f"準備發送訊息到群組 {line_group_id}，訊息長度：{len(message)} 字元")
+        
         # 發送到 Line 群組
         line_bot_api.push_message(line_group_id, TextSendMessage(text=message))
         print(f"已發送報名更新到 Line 群組：{event['title']}")
         
     except Exception as e:
         print(f"發送 Line 訊息時發生錯誤：{str(e)}")
+        print(f"錯誤類型：{type(e).__name__}")
+        if hasattr(e, 'status_code'):
+            print(f"狀態碼：{e.status_code}")
+        if hasattr(e, 'error_response'):
+            print(f"錯誤回應：{e.error_response}")
 
 # 防止快取
 @app.after_request
