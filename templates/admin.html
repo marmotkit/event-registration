@@ -131,6 +131,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 .then(response => response.text())
                 .then(html => {
                     document.getElementById('registration-list').innerHTML = html;
+                    // 重新綁定繳費狀態事件監聽器
+                    bindPaymentStatusListeners();
                 })
                 .catch(error => {
                     console.error('Error:', error);
@@ -139,41 +141,46 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
     
-    // 處理繳費狀態的切換
-    document.querySelectorAll('.payment-status').forEach(checkbox => {
-        checkbox.addEventListener('change', function() {
-            const registrationId = this.dataset.registrationId;
-            const label = this.parentElement.querySelector('.form-check-label');
-            
-            fetch(`/admin/registration/${registrationId}/toggle_payment`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                }
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.error) {
-                    alert(data.error);
-                    this.checked = !this.checked;
-                } else {
-                    // 更新標籤文字和樣式
-                    if (this.checked) {
-                        label.innerHTML = '<span class="text-success">已收款</span>';
-                    } else {
-                        label.innerHTML = '<span class="text-danger">未收款</span>';
+    // 綁定繳費狀態事件監聽器的函數
+    function bindPaymentStatusListeners() {
+        document.querySelectorAll('.payment-status').forEach(checkbox => {
+            checkbox.addEventListener('change', function() {
+                const registrationId = this.dataset.registrationId;
+                const label = this.parentElement.querySelector('.form-check-label');
+                
+                fetch(`/admin/registration/${registrationId}/toggle_payment`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
                     }
-                    // 重新載入頁面以更新統計數據
-                    window.location.reload();
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                alert('更新繳費狀態時發生錯誤');
-                this.checked = !this.checked;
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        alert(data.error);
+                        this.checked = !this.checked;
+                    } else {
+                        // 更新標籤文字和樣式
+                        if (this.checked) {
+                            label.innerHTML = '<span class="text-success">已收款</span>';
+                        } else {
+                            label.innerHTML = '<span class="text-danger">未收款</span>';
+                        }
+                        // 重新載入頁面以更新統計數據
+                        window.location.reload();
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('更新繳費狀態時發生錯誤');
+                    this.checked = !this.checked;
+                });
             });
         });
-    });
+    }
+    
+    // 初始綁定繳費狀態事件監聽器
+    bindPaymentStatusListeners();
 
     // 處理隱藏/顯示按鈕點擊
     document.querySelectorAll('.toggle-visibility').forEach(button => {
