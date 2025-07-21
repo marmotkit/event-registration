@@ -43,8 +43,18 @@ def format_registration_list_for_line(event, registrations):
     if not registrations:
         return f"📋 {event['title']}\n\n目前尚無報名者"
     
-    # 計算統計資訊
-    total_participants = sum(int(reg.get('participants', 1)) for reg in registrations)
+    # 計算統計資訊（安全處理空值）
+    total_participants = 0
+    for reg in registrations:
+        participants = reg.get('participants', '1')
+        if participants and participants.strip():
+            try:
+                total_participants += int(participants)
+            except (ValueError, TypeError):
+                total_participants += 1
+        else:
+            total_participants += 1
+    
     paid_count = sum(1 for reg in registrations if reg.get('has_paid', False))
     
     message = f"📋 {event['title']}\n"
@@ -65,8 +75,16 @@ def format_registration_list_for_line(event, registrations):
         message += f"{i}. {reg['name']}"
         if reg.get('phone'):
             message += f" ({reg['phone']})"
-        if reg.get('participants') and reg['participants'] != '1':
-            message += f" x{reg['participants']}人"
+        
+        # 安全處理參與人數
+        participants = reg.get('participants', '1')
+        if participants and participants.strip() and participants != '1':
+            try:
+                int(participants)  # 驗證是否為有效數字
+                message += f" x{participants}人"
+            except (ValueError, TypeError):
+                pass  # 如果不是有效數字，跳過顯示
+        
         if reg.get('has_paid'):
             message += " ✅已繳費"
         message += f"\n"
