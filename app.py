@@ -71,33 +71,33 @@ def format_registration_list_for_line(event, registrations):
     message += f"• 已繳費：{paid_count} 人\n"
     message += f"• 已收費用：NT$ {paid_count * event['fee']}\n\n"
     
-    # 限制顯示的報名名單數量，避免訊息過長
-    max_display = 20  # 最多顯示 20 個報名者
-    display_registrations = registrations[:max_display]
+    # 顯示所有報名者
+    display_registrations = registrations
     
-    message += f"📝 報名名單（顯示前 {len(display_registrations)} 位）：\n"
+    message += f"📝 報名名單（共 {len(display_registrations)} 位）：\n"
     for i, reg in enumerate(display_registrations, 1):
         # 限制每個報名者的資訊長度
         name = reg['name'][:20] if len(reg['name']) > 20 else reg['name']
         line = f"{i}. {name}"
         
-        # 安全處理參與人數
+        # 安全處理參與人數 - 總是顯示人數
         participants = reg.get('participants', '1')
-        if participants and participants.strip() and participants != '1':
+        if participants and participants.strip():
             try:
-                int(participants)  # 驗證是否為有效數字
-                line += f" x{participants}人"
+                participant_count = int(participants)
+                if participant_count > 1:
+                    line += f" x{participant_count}人"
+                else:
+                    line += " x1人"
             except (ValueError, TypeError):
-                pass  # 如果不是有效數字，跳過顯示
+                line += " x1人"  # 如果無法解析，預設為1人
+        else:
+            line += " x1人"  # 如果沒有設定，預設為1人
         
         if reg.get('has_paid'):
             line += " ✅已繳費"
         
         message += line + "\n"
-    
-    # 如果報名者超過顯示限制，添加提示
-    if len(registrations) > max_display:
-        message += f"\n... 還有 {len(registrations) - max_display} 位報名者"
     
     # 確保訊息不超過 Line 的限制
     if len(message) > 4500:  # 留一些餘地
