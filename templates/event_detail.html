@@ -97,7 +97,7 @@
                                     <th>姓名</th>
                                     <th>電話</th>
                                     <th>電子郵件</th>
-                                    <th>參與人數</th>
+                                    <th>攜伴人數</th>
                                     {% if event.custom_fields %}
                                     {% for field in event.custom_fields %}
                                     <th>{{ field.name }}</th>
@@ -113,7 +113,7 @@
                                     <td>{{ registration.name }}</td>
                                     <td>{{ registration.phone }}</td>
                                     <td>{{ registration.email }}</td>
-                                    <td>{{ registration.participants }}</td>
+                                    <td>{{ registration.companions }}</td>
                                     {% if event.custom_fields %}
                                     {% for field in event.custom_fields %}
                                     <td>{{ registration.custom_fields.get(field.name, '') }}</td>
@@ -202,10 +202,6 @@
                                 <div class="mb-3">
                                     <label for="email{{ registration._id }}" class="form-label">電子郵件 <small class="text-muted">(選填)</small></label>
                                     <input type="email" class="form-control" id="email{{ registration._id }}" name="email" value="{{ registration.email }}">
-                                </div>
-                                <div class="mb-3">
-                                    <label for="participants{{ registration._id }}" class="form-label">參與人數</label>
-                                    <input type="number" class="form-control" id="participants{{ registration._id }}" name="participants" value="{{ registration.participants }}" min="1">
                                 </div>
                                 <div class="mb-3">
                                     <label for="companions{{ registration._id }}" class="form-label">攜伴人數</label>
