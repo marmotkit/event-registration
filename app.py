@@ -872,6 +872,9 @@ def line_webhook():
         # 獲取請求體
         body = request.get_data(as_text=True)
         
+        # 記錄 webhook 事件（用於調試）
+        print(f"收到 Line webhook: {body}")
+        
         # 驗證簽名
         line_handler.handle(body, signature)
         
@@ -882,6 +885,24 @@ def line_webhook():
     except Exception as e:
         print(f"Line webhook error: {str(e)}")
         return 'Error', 500
+
+@app.route('/line/test', methods=['GET'])
+def line_test():
+    """測試 Line Bot 連接和獲取群組 ID"""
+    try:
+        # 測試 Line Bot 連接
+        profile = line_bot_api.get_profile('U1234567890abcdef1234567890abcdef')  # 使用假 ID 測試連接
+        return jsonify({
+            'status': 'success',
+            'message': 'Line Bot 連接正常',
+            'note': '請在群組中發送訊息，然後查看應用程式日誌來獲取群組 ID'
+        })
+    except Exception as e:
+        return jsonify({
+            'status': 'error',
+            'message': f'Line Bot 連接失敗: {str(e)}',
+            'note': '請檢查 LINE_CHANNEL_ACCESS_TOKEN 是否正確'
+        })
 
 if __name__ == '__main__':
     # 創建管理員帳號
