@@ -133,20 +133,9 @@ def send_registration_update_to_line(event_id):
         
         print(f"準備發送訊息到群組 {line_group_id}，訊息長度：{len(message)} 字元")
         
-        # 先嘗試發送簡單的測試訊息
-        try:
-            simple_message = f"📋 {event['title']} - 報名更新"
-            line_bot_api.push_message(line_group_id, TextSendMessage(text=simple_message))
-            print(f"已發送簡單報名更新到 Line 群組：{event['title']}")
-        except Exception as simple_error:
-            print(f"發送簡單訊息失敗：{str(simple_error)}")
-            # 如果簡單訊息也失敗，嘗試發送完整訊息
-            try:
-                line_bot_api.push_message(line_group_id, TextSendMessage(text=message))
-                print(f"已發送完整報名更新到 Line 群組：{event['title']}")
-            except Exception as full_error:
-                print(f"發送完整訊息也失敗：{str(full_error)}")
-                raise full_error
+        # 發送完整的報名名單到 Line 群組
+        line_bot_api.push_message(line_group_id, TextSendMessage(text=message))
+        print(f"已發送完整報名更新到 Line 群組：{event['title']}")
         
     except Exception as e:
         print(f"發送 Line 訊息時發生錯誤：{str(e)}")
