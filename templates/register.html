@@ -39,6 +39,18 @@
                 <label for="email" class="form-label">電子郵件 <small class="text-muted">(選填)</small></label>
                 <input type="email" class="form-control" id="email" name="email">
             </div>
+            <div class="mb-3">
+                <label for="companions" class="form-label">攜伴人數</label>
+                <input type="number" class="form-control" id="companions" name="companions" value="0" min="0">
+            </div>
+            <div class="mb-3">
+                <label for="transportation" class="form-label">交通方式</label>
+                <input type="text" class="form-control" id="transportation" name="transportation">
+            </div>
+            <div class="mb-3">
+                <label for="suggestions" class="form-label">其他建議</label>
+                <textarea class="form-control" id="suggestions" name="suggestions" rows="3"></textarea>
+            </div>
 
             {% if event.custom_fields %}
                 {% for field in event.custom_fields %}

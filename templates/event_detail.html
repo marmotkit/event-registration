@@ -205,7 +205,19 @@
                                 </div>
                                 <div class="mb-3">
                                     <label for="participants{{ registration._id }}" class="form-label">參與人數</label>
-                                    <input type="text" class="form-control" id="participants{{ registration._id }}" name="participants" value="{{ registration.participants }}">
+                                    <input type="number" class="form-control" id="participants{{ registration._id }}" name="participants" value="{{ registration.participants }}" min="1">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="companions{{ registration._id }}" class="form-label">攜伴人數</label>
+                                    <input type="number" class="form-control" id="companions{{ registration._id }}" name="companions" value="{{ registration.companions }}" min="0">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="transportation{{ registration._id }}" class="form-label">交通方式</label>
+                                    <input type="text" class="form-control" id="transportation{{ registration._id }}" name="transportation" value="{{ registration.transportation }}">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="suggestions{{ registration._id }}" class="form-label">其他建議</label>
+                                    <textarea class="form-control" id="suggestions{{ registration._id }}" name="suggestions" rows="3">{{ registration.suggestions }}</textarea>
                                 </div>
                                 {% if event.custom_fields %}
                                 {% for field in event.custom_fields %}
