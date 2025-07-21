@@ -81,10 +81,6 @@ def format_registration_list_for_line(event, registrations):
         name = reg['name'][:20] if len(reg['name']) > 20 else reg['name']
         line = f"{i}. {name}"
         
-        if reg.get('phone'):
-            phone = reg['phone'][:15] if len(reg['phone']) > 15 else reg['phone']
-            line += f" ({phone})"
-        
         # 安全處理參與人數
         participants = reg.get('participants', '1')
         if participants and participants.strip() and participants != '1':
@@ -137,9 +133,20 @@ def send_registration_update_to_line(event_id):
         
         print(f"準備發送訊息到群組 {line_group_id}，訊息長度：{len(message)} 字元")
         
-        # 發送到 Line 群組
-        line_bot_api.push_message(line_group_id, TextSendMessage(text=message))
-        print(f"已發送報名更新到 Line 群組：{event['title']}")
+        # 先嘗試發送簡單的測試訊息
+        try:
+            simple_message = f"📋 {event['title']} - 報名更新"
+            line_bot_api.push_message(line_group_id, TextSendMessage(text=simple_message))
+            print(f"已發送簡單報名更新到 Line 群組：{event['title']}")
+        except Exception as simple_error:
+            print(f"發送簡單訊息失敗：{str(simple_error)}")
+            # 如果簡單訊息也失敗，嘗試發送完整訊息
+            try:
+                line_bot_api.push_message(line_group_id, TextSendMessage(text=message))
+                print(f"已發送完整報名更新到 Line 群組：{event['title']}")
+            except Exception as full_error:
+                print(f"發送完整訊息也失敗：{str(full_error)}")
+                raise full_error
         
     except Exception as e:
         print(f"發送 Line 訊息時發生錯誤：{str(e)}")
@@ -955,10 +962,17 @@ def line_test():
         
         # 測試 Line Bot 連接
         try:
-            profile = line_bot_api.get_profile('U1234567890abcdef1234567890abcdef')  # 使用假 ID 測試連接
+            # 直接測試 Bot 連接
+            bot_profile = line_bot_api.get_profile('U1234567890abcdef1234567890abcdef')
             result['bot_connection'] = 'success'
+            result['bot_name'] = bot_profile.display_name
         except Exception as e:
             result['bot_connection'] = f'failed: {str(e)}'
+            # 檢查 token 格式
+            if access_token:
+                result['token_preview'] = f'Token 前10字元: {access_token[:10]}...'
+            else:
+                result['token_preview'] = 'Token 未設定'
         
         # 測試群組權限
         if group_id:
