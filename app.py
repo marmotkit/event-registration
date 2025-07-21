@@ -9,6 +9,9 @@ from dotenv import load_dotenv
 from werkzeug.utils import secure_filename
 import gridfs
 import io
+from linebot import LineBotApi, WebhookHandler
+from linebot.exceptions import InvalidSignatureError
+from linebot.models import TextSendMessage
 
 # 載入環境變數
 load_dotenv()
@@ -25,11 +28,78 @@ users_collection = db.users
 registrations_collection = db.registrations
 fs = gridfs.GridFS(db)  # 用於存儲檔案
 
+# 設定 Line Bot
+line_bot_api = LineBotApi(os.getenv('LINE_CHANNEL_ACCESS_TOKEN', ''))
+line_handler = WebhookHandler(os.getenv('LINE_CHANNEL_SECRET', ''))
+
 # 允許的檔案類型
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx'}
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+def format_registration_list_for_line(event, registrations):
+    """格式化報名名單用於發送到 Line 群組"""
+    if not registrations:
+        return f"📋 {event['title']}\n\n目前尚無報名者"
+    
+    # 計算統計資訊
+    total_participants = sum(int(reg.get('participants', 1)) for reg in registrations)
+    paid_count = sum(1 for reg in registrations if reg.get('has_paid', False))
+    
+    message = f"📋 {event['title']}\n"
+    message += f"📅 活動日期：{event['start_date']}"
+    if event['start_date'] != event['end_date']:
+        message += f" 至 {event['end_date']}"
+    message += f"\n📍 地點：{event['location']}\n"
+    message += f"💰 費用：NT$ {event['fee']}\n\n"
+    
+    message += f"📊 報名統計：\n"
+    message += f"• 報名人數：{len(registrations)} 人\n"
+    message += f"• 總參與人數：{total_participants} 人\n"
+    message += f"• 已繳費：{paid_count} 人\n"
+    message += f"• 已收費用：NT$ {paid_count * event['fee']}\n\n"
+    
+    message += "📝 報名名單：\n"
+    for i, reg in enumerate(registrations, 1):
+        message += f"{i}. {reg['name']}"
+        if reg.get('phone'):
+            message += f" ({reg['phone']})"
+        if reg.get('participants') and reg['participants'] != '1':
+            message += f" x{reg['participants']}人"
+        if reg.get('has_paid'):
+            message += " ✅已繳費"
+        message += f"\n"
+    
+    return message
+
+def send_registration_update_to_line(event_id):
+    """發送報名更新到 Line 群組"""
+    try:
+        # 獲取 Line 群組 ID
+        line_group_id = os.getenv('LINE_GROUP_ID')
+        if not line_group_id:
+            print("LINE_GROUP_ID 未設定，跳過發送 Line 訊息")
+            return
+        
+        # 獲取活動資訊
+        event = events_collection.find_one({'_id': ObjectId(event_id)})
+        if not event:
+            print(f"找不到活動 {event_id}")
+            return
+        
+        # 獲取報名資料
+        registrations = list(registrations_collection.find({'event_id': ObjectId(event_id)}))
+        
+        # 格式化訊息
+        message = format_registration_list_for_line(event, registrations)
+        
+        # 發送到 Line 群組
+        line_bot_api.push_message(line_group_id, TextSendMessage(text=message))
+        print(f"已發送報名更新到 Line 群組：{event['title']}")
+        
+    except Exception as e:
+        print(f"發送 Line 訊息時發生錯誤：{str(e)}")
 
 # 防止快取
 @app.after_request
@@ -190,6 +260,10 @@ def cancel_registration(event_id, registration_id):
         
         # 刪除報名記錄
         registrations_collection.delete_one({'_id': ObjectId(registration_id)})
+        
+        # 發送報名更新到 Line 群組
+        send_registration_update_to_line(str(event_id))
+        
         flash('已取消報名')
         
         return redirect(url_for('event_detail', event_id=event_id))
@@ -229,6 +303,10 @@ def register(event_id):
 
             try:
                 registrations_collection.insert_one(registration_data)
+                
+                # 發送報名更新到 Line 群組
+                send_registration_update_to_line(str(event_id))
+                
                 flash('報名成功！')
                 return redirect(url_for('event_detail', event_id=event_id))
             except Exception as e:
@@ -604,6 +682,9 @@ def toggle_payment(registration_id):
             {'$set': {'has_paid': new_status}}
         )
         
+        # 發送報名更新到 Line 群組
+        send_registration_update_to_line(str(registration['event_id']))
+        
         return jsonify({
             'success': True,
             'has_paid': new_status
@@ -685,6 +766,9 @@ def edit_registration(event_id, registration_id):
             {'_id': ObjectId(registration_id)},
             {'$set': updated_data}
         )
+        
+        # 發送報名更新到 Line 群組
+        send_registration_update_to_line(str(event_id))
         
         flash('報名資料已更新')
         return redirect(url_for('event_detail', event_id=event_id))
@@ -777,6 +861,27 @@ def toggle_event_lock(event_id):
     except Exception as e:
         print(f"Error toggling event lock: {str(e)}")
         return jsonify({'error': '更新活動狀態時發生錯誤'}), 500
+
+@app.route('/line/webhook', methods=['POST'])
+def line_webhook():
+    """Line Bot Webhook 處理"""
+    try:
+        # 獲取 X-Line-Signature 標頭
+        signature = request.headers['X-Line-Signature']
+        
+        # 獲取請求體
+        body = request.get_data(as_text=True)
+        
+        # 驗證簽名
+        line_handler.handle(body, signature)
+        
+        return 'OK'
+    except InvalidSignatureError:
+        print("Invalid signature")
+        return 'Invalid signature', 400
+    except Exception as e:
+        print(f"Line webhook error: {str(e)}")
+        return 'Error', 500
 
 if __name__ == '__main__':
     # 創建管理員帳號
