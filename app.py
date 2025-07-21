@@ -46,14 +46,16 @@ def format_registration_list_for_line(event, registrations):
     # 計算統計資訊（安全處理空值）
     total_participants = 0
     for reg in registrations:
+        # 計算自己+攜伴人數
         participants = reg.get('participants', '1')
-        if participants and participants.strip():
-            try:
-                total_participants += int(participants)
-            except (ValueError, TypeError):
-                total_participants += 1
-        else:
-            total_participants += 1
+        companions = reg.get('companions', '0')
+        
+        try:
+            participant_count = int(participants) if participants and participants.strip() else 1
+            companion_count = int(companions) if companions and companions.strip() else 0
+            total_participants += participant_count + companion_count
+        except (ValueError, TypeError):
+            total_participants += 1  # 如果無法解析，預設為1人
     
     paid_count = sum(1 for reg in registrations if reg.get('has_paid', False))
     
@@ -80,19 +82,21 @@ def format_registration_list_for_line(event, registrations):
         name = reg['name'][:20] if len(reg['name']) > 20 else reg['name']
         line = f"{i}. {name}"
         
-        # 安全處理參與人數 - 總是顯示人數
+        # 安全處理參與人數 - 顯示自己+攜伴人數
         participants = reg.get('participants', '1')
-        if participants and participants.strip():
-            try:
-                participant_count = int(participants)
-                if participant_count > 1:
-                    line += f" x{participant_count}人"
-                else:
-                    line += " x1人"
-            except (ValueError, TypeError):
-                line += " x1人"  # 如果無法解析，預設為1人
-        else:
-            line += " x1人"  # 如果沒有設定，預設為1人
+        companions = reg.get('companions', '0')
+        
+        try:
+            participant_count = int(participants) if participants and participants.strip() else 1
+            companion_count = int(companions) if companions and companions.strip() else 0
+            total_count = participant_count + companion_count
+            
+            if total_count > 1:
+                line += f" x{total_count}人"
+            else:
+                line += " x1人"
+        except (ValueError, TypeError):
+            line += " x1人"  # 如果無法解析，預設為1人
         
         if reg.get('has_paid'):
             line += " ✅已繳費"
@@ -339,7 +343,10 @@ def register(event_id):
                 'name': request.form['name'],
                 'phone': request.form.get('phone', ''),
                 'email': request.form.get('email', ''),
-                'participants': request.form.get('participants', ''),
+                'participants': request.form.get('participants', '1'),
+                'companions': request.form.get('companions', '0'),  # 攜伴人數
+                'transportation': request.form.get('transportation', ''),  # 交通方式
+                'suggestions': request.form.get('suggestions', ''),  # 其他建議
                 'preferred_date': request.form.get('preferred_date', ''),
                 'register_time': datetime.now().strftime('%Y-%m-%d'),  # 只保留日期
                 'has_paid': False
@@ -797,6 +804,9 @@ def edit_registration(event_id, registration_id):
             'phone': request.form.get('phone', ''),
             'email': request.form.get('email', ''),
             'participants': request.form.get('participants', '1'),
+            'companions': request.form.get('companions', '0'),  # 攜伴人數
+            'transportation': request.form.get('transportation', ''),  # 交通方式
+            'suggestions': request.form.get('suggestions', ''),  # 其他建議
             'custom_fields': {}
         }
         
