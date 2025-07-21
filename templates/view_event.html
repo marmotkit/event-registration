@@ -92,9 +92,9 @@
                                        style="width: 3em; height: 1.5em;">
                                 <label class="form-check-label ms-2" for="payment_{{ registration._id }}">
                                     {% if registration.has_paid %}
-                                    <span class="text-success">已繳費</span>
+                                    <span class="text-success">已收款</span>
                                     {% else %}
-                                    <span class="text-danger">未繳費</span>
+                                    <span class="text-danger">未收款</span>
                                     {% endif %}
                                 </label>
                             </div>
@@ -135,9 +135,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 } else {
                     // 更新標籤文字和樣式
                     if (this.checked) {
-                        label.innerHTML = '<span class="text-success">已繳費</span>';
+                        label.innerHTML = '<span class="text-success">已收款</span>';
                     } else {
-                        label.innerHTML = '<span class="text-danger">未繳費</span>';
+                        label.innerHTML = '<span class="text-danger">未收款</span>';
                     }
                 }
             })
