@@ -936,21 +936,69 @@ def line_webhook():
 
 @app.route('/line/test', methods=['GET'])
 def line_test():
-    """測試 Line Bot 連接和獲取群組 ID"""
+    """測試 Line Bot 連接和群組權限"""
     try:
-        # 測試 Line Bot 連接
-        profile = line_bot_api.get_profile('U1234567890abcdef1234567890abcdef')  # 使用假 ID 測試連接
-        return jsonify({
+        # 獲取環境變數
+        access_token = os.getenv('LINE_CHANNEL_ACCESS_TOKEN')
+        channel_secret = os.getenv('LINE_CHANNEL_SECRET')
+        group_id = os.getenv('LINE_GROUP_ID')
+        
+        result = {
             'status': 'success',
-            'message': 'Line Bot 連接正常',
-            'note': '請在群組中發送訊息，然後查看應用程式日誌來獲取群組 ID'
-        })
+            'environment_vars': {
+                'access_token_set': bool(access_token),
+                'channel_secret_set': bool(channel_secret),
+                'group_id_set': bool(group_id),
+                'group_id': group_id if group_id else 'Not set'
+            }
+        }
+        
+        # 測試 Line Bot 連接
+        try:
+            profile = line_bot_api.get_profile('U1234567890abcdef1234567890abcdef')  # 使用假 ID 測試連接
+            result['bot_connection'] = 'success'
+        except Exception as e:
+            result['bot_connection'] = f'failed: {str(e)}'
+        
+        # 測試群組權限
+        if group_id:
+            try:
+                # 嘗試獲取群組摘要
+                summary = line_bot_api.get_group_summary(group_id)
+                result['group_access'] = 'success'
+                result['group_name'] = summary.group_name
+            except Exception as e:
+                result['group_access'] = f'failed: {str(e)}'
+        else:
+            result['group_access'] = 'group_id_not_set'
+        
+        return jsonify(result)
+        
     except Exception as e:
         return jsonify({
             'status': 'error',
-            'message': f'Line Bot 連接失敗: {str(e)}',
-            'note': '請檢查 LINE_CHANNEL_ACCESS_TOKEN 是否正確'
+            'message': f'測試失敗: {str(e)}'
         })
+
+@app.route('/line/send-test', methods=['POST'])
+def send_test_message():
+    """發送測試訊息到群組"""
+    try:
+        group_id = os.getenv('LINE_GROUP_ID')
+        if not group_id:
+            return jsonify({'error': 'LINE_GROUP_ID 未設定'}), 400
+        
+        # 發送簡單的測試訊息
+        test_message = "🧪 測試訊息：活動報名系統 Line Bot 連接正常！"
+        line_bot_api.push_message(group_id, TextSendMessage(text=test_message))
+        
+        return jsonify({'success': True, 'message': '測試訊息已發送'})
+        
+    except Exception as e:
+        return jsonify({
+            'error': f'發送測試訊息失敗: {str(e)}',
+            'error_type': type(e).__name__
+        }), 500
 
 if __name__ == '__main__':
     # 創建管理員帳號
