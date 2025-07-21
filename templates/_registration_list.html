@@ -11,7 +11,7 @@
                         <th>姓名</th>
                         <th>電話</th>
                         <th>電子郵件</th>
-                        <th>參與人數</th>
+                        <th>攜伴人數</th>
                         {% if event.custom_fields %}
                         {% for field in event.custom_fields %}
                         <th>{{ field.name }}</th>
@@ -27,7 +27,7 @@
                         <td>{{ registration.name }}</td>
                         <td>{{ registration.phone }}</td>
                         <td>{{ registration.email }}</td>
-                        <td>{{ registration.participants }}</td>
+                        <td>{{ registration.companions }}</td>
                         {% if event.custom_fields %}
                         {% for field in event.custom_fields %}
                         <td>{{ registration.custom_fields.get(field.name, '') }}</td>
